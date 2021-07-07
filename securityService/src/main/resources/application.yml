@@ -1,0 +1,11 @@
+server:
+  port: 8000
+spring:
+  application:
+    name: service-security
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+  profiles:
+    active: mybatis, jdbc, redis

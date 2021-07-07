@@ -1,0 +1,11 @@
+server:
+  port: 8010
+spring:
+  application:
+    name: service-user
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+  profiles:
+    active: mybatis, jdbc, redis

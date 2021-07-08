@@ -1,0 +1,3 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+org.churunfa.security.autoConfigaration.LoginConfig,\
+org.churunfa.security.autoConfigaration.FeignClientConfig

@@ -2,7 +2,8 @@ package com.cloud.securityservice.controller;
 
 import com.cloud.common.pojo.User;
 import com.cloud.securityservice.service.UserService;
-import com.cloud.securityservice.utils.UserToMap;
+import com.cloud.securityservice.utils.UserParse;
+import io.jsonwebtoken.Claims;
 import org.churunfa.security.password.JWT.JWTUtils;
 import org.churunfa.security.password.bcrypt.BCryptPasswordEncoder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,13 +67,14 @@ public class AuthController {
             return map;
         }
 
+        map.put("jwt_token", jwtUtils.createJWT(UserParse.userToMap(queryUser)));
+        System.out.println(map.get("jwt_token"));
+        map.put("success", true);
+
         User updateUser = new User();
         updateUser.setId(queryUser.getId());
         updateUser.setLast_login(new Date());
         userService.update(updateUser);
-
-        map.put("jwt_token", jwtUtils.createJWT(UserToMap.userToMap(queryUser)));
-        map.put("success", true);
         return map;
     }
 
@@ -84,6 +86,25 @@ public class AuthController {
         if (count == 0) map.put("success", false);
         else map.put("success", true);
 
+        return map;
+    }
+
+    @GetMapping("/verifyJwtToken")
+    public Map verifyJwtToken(String token){
+        HashMap<String, Object> map = new HashMap<>();
+        if (token == null) {
+            map.put("success", false);
+            map.put("msg", "用户未登陆");
+        }
+        try {
+            Claims claims = jwtUtils.verifyJwt(token);
+            map.put("success", true);
+            map.put("user", UserParse.ClaimsToUser(claims));
+        } catch (Exception e) {
+            map.put("success", false);
+            System.out.println(e);
+            map.put("msg", e.getMessage());
+        }
         return map;
     }
 

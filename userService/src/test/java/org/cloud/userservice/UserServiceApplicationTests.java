@@ -1,5 +1,7 @@
 package org.cloud.userservice;
 
+import org.churunfa.security.autoConfigaration.SecurityService;
+import org.churunfa.security.autoConfigaration.SecurityServiceFactoryBean;
 import org.churunfa.security.password.bcrypt.BCryptPasswordEncoder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,6 +23,18 @@ public class UserServiceApplicationTests {
 //        String name = (String) redisTemplate.opsForValue().get("name1");
 //        System.out.println(name);
 //        redisTemplate.delete("name1");
+    }
+
+    @Autowired
+    SecurityServiceFactoryBean securityServiceFactoryBean;
+
+//    @Autowired
+//    SecurityService securityService;
+
+    @Test
+    public void setSecurityServiceFactoryBeanTest() throws Exception {
+        System.out.println(securityServiceFactoryBean);
+        System.out.println(securityServiceFactoryBean.getObject());
     }
 
 }

@@ -39,10 +39,12 @@ public class JWTUtils {
         Date expiration = new Date(new Date().getTime() + 1000 * 60 * 20);
         System.out.println(map);
         JwtBuilder jwtBuilder = Jwts.builder()
+                .setHeaderParam("type","JWT")
                 .setIssuedAt(new Date())
                 .setClaims(map)
+                .claim("iat", new Date())
                 .setExpiration(expiration)
-                .signWith(SignatureAlgorithm.HS256, secretKey);
+                .signWith(SignatureAlgorithm.HS512, secretKey);
         return jwtBuilder.compact();
     }
 
@@ -52,7 +54,7 @@ public class JWTUtils {
                 .setIssuedAt(new Date())
                 .setClaims(map)
                 .setExpiration(expiration)
-                .signWith(SignatureAlgorithm.HS256, secretKey);
+                .signWith(SignatureAlgorithm.HS512, secretKey);
         return jwtBuilder.compact();
     }
 

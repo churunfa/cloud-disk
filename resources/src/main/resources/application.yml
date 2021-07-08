@@ -1,0 +1,16 @@
+server:
+  port: 8050
+spring:
+  application:
+    name: service-resources
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+  profiles:
+    active: mybatis, jdbc, redis
+
+  servlet:
+    multipart:
+      max-file-size: -1
+      max-request-size: -1

@@ -1,11 +1,13 @@
 package com.cloud.common.pojo.file;
 
+import com.cloud.common.pojo.User;
+
 import java.util.Date;
 
 public class UserFile {
     private Integer id;
-    private Integer uid;
-    private Integer file_id;
+    private User user;
+    private FileDB file;
     private String file_name;
     private String dir;
     private FileType fileType;
@@ -22,20 +24,20 @@ public class UserFile {
         this.id = id;
     }
 
-    public Integer getUid() {
-        return uid;
+    public User getUser() {
+        return user;
     }
 
-    public void setUid(Integer uid) {
-        this.uid = uid;
+    public void setUser(User user) {
+        this.user = user;
     }
 
-    public Integer getFile_id() {
-        return file_id;
+    public FileDB getFile() {
+        return file;
     }
 
-    public void setFile_id(Integer file_id) {
-        this.file_id = file_id;
+    public void setFile(FileDB file) {
+        this.file = file;
     }
 
     public String getFile_name() {
@@ -98,8 +100,8 @@ public class UserFile {
     public String toString() {
         return "UserFile{" +
                 "id=" + id +
-                ", uid=" + uid +
-                ", file_id=" + file_id +
+                ", user=" + user +
+                ", file=" + file +
                 ", file_name='" + file_name + '\'' +
                 ", dir='" + dir + '\'' +
                 ", fileType=" + fileType +

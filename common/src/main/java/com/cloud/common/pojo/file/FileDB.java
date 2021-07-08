@@ -2,7 +2,7 @@ package com.cloud.common.pojo.file;
 
 import java.util.Date;
 
-public class File {
+public class FileDB {
     private Integer id;
     private String filename;
     private String path;

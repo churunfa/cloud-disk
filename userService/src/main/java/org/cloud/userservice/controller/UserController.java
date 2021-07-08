@@ -31,5 +31,4 @@ public class UserController {
         }
         return autoService.register(user);
     }
-
 }

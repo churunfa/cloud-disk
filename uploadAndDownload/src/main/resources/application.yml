@@ -1,0 +1,15 @@
+server:
+  port: 8030
+spring:
+  application:
+    name: service-upload
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+  servlet:
+    multipart:
+      max-file-size: -1
+      max-request-size: -1
+  profiles:
+    active: mybatis, jdbc, redis

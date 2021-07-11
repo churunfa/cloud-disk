@@ -1,0 +1,27 @@
+server:
+  port: 8888
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        - id: user_route
+          uri: lb://service-user
+          predicates:
+            - Path=/api/service-user/**
+          filters:
+            - StripPrefix=2
+        - id: upload_route
+          uri: lb://service-upload
+          predicates:
+            - Path=/api/service-upload-download/**
+          filters:
+            - StripPrefix=2
+

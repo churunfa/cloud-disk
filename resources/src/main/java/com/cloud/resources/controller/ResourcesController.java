@@ -1,10 +1,12 @@
 package com.cloud.resources.controller;
 
+import com.cloud.common.pojo.file.FileDB;
 import com.cloud.common.pojo.file.ZipFile;
 import com.cloud.resources.service.DownloadService;
+import com.cloud.resources.service.UploadService;
+import com.cloud.resources.service.UploadServiceImpl;
 import com.cloud.resources.utils.FileUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.openfeign.SpringQueryMap;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -16,18 +18,32 @@ import java.util.Map;
 @RequestMapping("/resources")
 public class ResourcesController {
     DownloadService resourcesService;
+    UploadService uploadService;
 
     @Autowired
     public void setResourcesService(DownloadService resourcesService) {
         this.resourcesService = resourcesService;
     }
 
+    @Autowired
+    public void setUploadService(UploadServiceImpl uploadService) {
+        this.uploadService = uploadService;
+    }
+
     @PostMapping("/upload")
-    public Map upload(@RequestPart("file") MultipartFile file) {
-        System.out.println(file);
-        if (file != null) System.out.println(file.getOriginalFilename());
+    public Map upload(@RequestBody MultipartFile file) {
         HashMap<String, Object> map = new HashMap<>();
+        map.put("success", false);
+        if (file == null) {
+            map.put("msg", "file为空");
+            return map;
+        }
+        map.put("msg", "文件存储失败");
+        FileDB fileDB = uploadService.saveFile(file);
+        System.out.println("fileDB" + fileDB);
+        if (fileDB == null) return map;
         map.put("success", true);
+        map.put("msg", fileDB);
         return map;
     }
 
@@ -37,8 +53,7 @@ public class ResourcesController {
     }
 
     @RequestMapping("/download")
-    public ResponseEntity<byte[]> download(@RequestParam("path") String path, @RequestParam("filename") String filename) {
-        path = FileUtil.get(path);
-        return resourcesService.downloadByPath(path, filename);
+    public ResponseEntity<byte[]> download(@RequestParam("id") Integer id, @RequestParam("filename") String filename) {
+        return resourcesService.downloadByPath(id, filename);
     }
 }

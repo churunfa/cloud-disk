@@ -1,4 +1,4 @@
-package org.churunfa.security.autoConfigaration;
+package org.churunfa.security.autoconfigure;
 
 import org.churunfa.security.grant.auth.interceptor.LoginInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;

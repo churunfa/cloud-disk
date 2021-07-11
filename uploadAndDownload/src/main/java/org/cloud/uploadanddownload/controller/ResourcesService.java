@@ -3,7 +3,6 @@ package org.cloud.uploadanddownload.controller;
 import com.cloud.common.pojo.file.ZipFile;
 import org.cloud.uploadanddownload.config.MultipartSupportConfig;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.cloud.openfeign.SpringQueryMap;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,11 +14,11 @@ import java.util.Map;
 public interface ResourcesService {
 
     @PostMapping(value = "/resources/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    Map upload(@RequestPart("file") MultipartFile file);
+    Map upload(@RequestBody MultipartFile file);
 
     @PostMapping(value = "/resources/downloads")
     ResponseEntity<byte[]> downloads(@RequestBody ZipFile zipFile);
 
     @RequestMapping("/resources/download")
-    ResponseEntity<byte[]> download(@RequestParam("path") String path, @RequestParam("filename") String filename);
+    ResponseEntity<byte[]> download(@RequestParam("id") Integer id, @RequestParam("filename") String filename);
 }

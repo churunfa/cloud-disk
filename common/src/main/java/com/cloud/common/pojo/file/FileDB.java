@@ -9,6 +9,7 @@ public class FileDB {
     private String md5;
     private Date gmt_create; // 创建时间
     private Date gmt_modified; //最后修改时间
+    private Long size;
 
     public Integer getId() {
         return id;
@@ -58,15 +59,24 @@ public class FileDB {
         this.gmt_modified = gmt_modified;
     }
 
+    public Long getSize() {
+        return size;
+    }
+
+    public void setSize(Long size) {
+        this.size = size;
+    }
+
     @Override
     public String toString() {
-        return "File{" +
+        return "FileDB{" +
                 "id=" + id +
                 ", filename='" + filename + '\'' +
                 ", path='" + path + '\'' +
                 ", md5='" + md5 + '\'' +
                 ", gmt_create=" + gmt_create +
                 ", gmt_modified=" + gmt_modified +
+                ", size=" + size +
                 '}';
     }
 }

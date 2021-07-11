@@ -16,9 +16,9 @@ public class FileUtil {
         return baseUrl + "/" + path;
     }
 
-    public static final File cache(File file, Integer id, String name) {
+    public static final File cache(String pre, File file, Integer id, String name) {
 
-        String tmpStr = "tmp/" + id;
+        String tmpStr = pre + "/" + id;
 
         File tmp = new File(get(tmpStr));
         if (!tmp.exists()) tmp.mkdirs();
@@ -38,8 +38,8 @@ public class FileUtil {
         return file2;
     }
 
-    public static void refresh(int id) {
-        File file = new File(get("tmp/" + id));
+    public static void refresh(String pre, int id) {
+        File file = new File(get(pre + "/" + id));
         try {
             FileUtils.deleteDirectory(file);
         } catch (IOException e) {
@@ -75,9 +75,65 @@ public class FileUtil {
     }
 
     public static File getFile(File file, Integer id, String newName) {
-        File res = cache(file, id, newName);
-        refresh(id);
+        File res = cache("tmp", file, id, newName);
+        refresh("tmp", id);
         return res;
+    }
+
+    public static String getExtension(String name) {
+        String fileType=name.substring(name.lastIndexOf("."),name.length());
+        return fileType;
+    }
+
+    private static Boolean check(BufferedInputStream fir, BufferedInputStream sec) throws IOException {
+        if (fir.available() == sec.available()) {
+            while (fir.read() != -1 && sec.read() != -1) {
+                if (fir.read() != sec.read()) {
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+
+    public static Boolean compareFile(String firFile, String secFile) throws IOException {
+        BufferedInputStream fir = null;
+        BufferedInputStream sec = null;
+        try {
+            fir = new BufferedInputStream(new FileInputStream(firFile));
+            sec = new BufferedInputStream(new FileInputStream(secFile));
+            //比较文件的长度是否一样
+            return check(fir, sec);
+
+        } finally {
+            if (fir != null){
+                fir.close();
+            }
+            if (sec != null) {
+                sec.close();
+            }
+        }
+    }
+
+    public static Boolean compareFile(String firFile, InputStream sec_) throws IOException {
+        BufferedInputStream fir = null;
+        BufferedInputStream sec = null;
+        try {
+            fir = new BufferedInputStream(new FileInputStream(firFile));
+            sec = new BufferedInputStream(sec_);
+            return check(fir, sec);
+
+        } finally {
+            if (fir != null){
+                fir.close();
+            }
+            if (sec != null) {
+                sec.close();
+            }
+        }
     }
 
 }

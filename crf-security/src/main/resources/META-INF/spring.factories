@@ -1,3 +1,4 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-org.churunfa.security.autoConfigaration.LoginConfig,\
-org.churunfa.security.autoConfigaration.FeignClientConfig
+org.churunfa.security.autoconfigure.LoginConfig,\
+org.churunfa.security.autoconfigure.FeignClientConfig,\
+org.churunfa.security.autoconfigure.AuthorizationUserConfig

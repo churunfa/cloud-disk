@@ -75,6 +75,7 @@ public class AuthController {
         updateUser.setId(queryUser.getId());
         updateUser.setLast_login(new Date());
         userService.update(updateUser);
+        map.put("user", UserParse.userToMap(queryUser));
         return map;
     }
 
@@ -83,9 +84,11 @@ public class AuthController {
         Map<String, Object> map = new HashMap<>();
         int count = userService.insert(user);
 
-        if (count == 0) map.put("success", false);
+        if (count == 0) {
+            map.put("success", false);
+            map.put("msg", "用户名已存在");
+        }
         else map.put("success", true);
-
         return map;
     }
 
@@ -102,10 +105,30 @@ public class AuthController {
             map.put("user", UserParse.ClaimsToUser(claims));
         } catch (Exception e) {
             map.put("success", false);
-            System.out.println(e);
             map.put("msg", e.getMessage());
         }
         return map;
+    }
+
+    @RequestMapping("/check")
+    public Map checkLogin(String jwt_token) {
+        Map map = verifyJwtToken(jwt_token);
+
+        if (!(Boolean)map.get("success")) return map;
+
+        User user = (User) map.get("user");
+        User queryUser = userService.queryUserById(user.getId());
+        map.put("user", UserParse.userToMap(queryUser));
+        return map;
+    }
+
+    @RequestMapping("/getAllInfo")
+    public User getAllInfo(String jwt_token) {
+        Map map = verifyJwtToken(jwt_token);
+        if (!(Boolean)map.get("success")) return null;
+        User user = (User) map.get("user");
+        User queryUser = userService.queryUserById(user.getId());
+        return queryUser;
     }
 
 }

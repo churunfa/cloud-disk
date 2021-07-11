@@ -1,15 +1,15 @@
 package com.cloud.securityservice.mapper;
 
 import com.cloud.common.pojo.User;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
+import org.apache.ibatis.annotations.*;
 
 @Mapper
 public interface UserMapper {
     @Select("select * from user where username = #{username} and deleted = 0")
     User queryUserByUsername(String username);
+
+    @Select("select * from user where id = #{id} and deleted = 0;")
+    User queryUserById(int id);
 
     @Insert({
             "<script>",
@@ -38,6 +38,7 @@ public interface UserMapper {
             "</trim>",
             "</script>"
     })
+    @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
     int insertUser(User user);
 
     @Update({
@@ -57,6 +58,7 @@ public interface UserMapper {
             "where id = #{id}",
             "</script>"
     })
+    @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
     int updateUser(User user);
 
 }

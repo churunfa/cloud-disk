@@ -15,6 +15,7 @@ public class UserFile {
     private Date delete_time;
     private Date gmt_create; // 创建时间
     private Date gmt_modified; //最后修改时间
+    private Long size;
 
     public Integer getId() {
         return id;
@@ -96,6 +97,14 @@ public class UserFile {
         this.gmt_modified = gmt_modified;
     }
 
+    public Long getSize() {
+        return size;
+    }
+
+    public void setSize(Long size) {
+        this.size = size;
+    }
+
     @Override
     public String toString() {
         return "UserFile{" +
@@ -109,6 +118,7 @@ public class UserFile {
                 ", delete_time=" + delete_time +
                 ", gmt_create=" + gmt_create +
                 ", gmt_modified=" + gmt_modified +
+                ", size=" + size +
                 '}';
     }
 }

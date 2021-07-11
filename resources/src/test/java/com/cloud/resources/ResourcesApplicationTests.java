@@ -21,13 +21,13 @@ public class ResourcesApplicationTests {
     @Test
     public void fileCopyTest() {
         String path = FileUtil.get("/abc/index.html");
-        File cache = FileUtil.cache(new File(path),1 , "cache.html");
+        File cache = FileUtil.cache("tmp", new File(path),1 , "cache.html");
         System.out.println(cache.getName());
     }
 
     @Test
     public void refreshTest() {
-        FileUtil.refresh(1);
+        FileUtil.refresh("tmp", 1);
     }
 
     @Autowired

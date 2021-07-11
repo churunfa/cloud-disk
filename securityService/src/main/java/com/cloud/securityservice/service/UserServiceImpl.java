@@ -28,6 +28,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public User queryUserById(int id) {
+        return userMapper.queryUserById(id);
+    }
+
+    @Override
     public int insert(User user) {
         if (user.getGmt_create() == null) user.setGmt_create(new Date());
         if (user.getGmt_modified() == null) user.setGmt_modified(new Date());

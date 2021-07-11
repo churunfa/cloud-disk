@@ -1,14 +1,9 @@
-package org.churunfa.security.autoConfigaration;
+package org.churunfa.security.autoconfigure;
 
 import feign.*;
 import feign.codec.Decoder;
 import feign.codec.Encoder;
-import io.lettuce.core.ScriptOutputType;
-import org.churunfa.security.grant.auth.error.PermissionDenied;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.openfeign.FeignClientsConfiguration;
 import org.springframework.context.annotation.Bean;

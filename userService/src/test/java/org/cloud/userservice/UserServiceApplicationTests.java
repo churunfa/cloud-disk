@@ -1,8 +1,6 @@
 package org.cloud.userservice;
 
-import org.churunfa.security.autoConfigaration.SecurityService;
-import org.churunfa.security.autoConfigaration.SecurityServiceFactoryBean;
-import org.churunfa.security.password.bcrypt.BCryptPasswordEncoder;
+import org.churunfa.security.autoconfigure.SecurityServiceFactoryBean;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -36,7 +36,7 @@ public class JWTUtils {
     }
 
     public String createJWT(Map<String, Object> map) {
-        Date expiration = new Date(new Date().getTime() + 1000 * 60 * 20);
+        Date expiration = new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 15);
         System.out.println(map);
         JwtBuilder jwtBuilder = Jwts.builder()
                 .setHeaderParam("type","JWT")

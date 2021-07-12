@@ -34,5 +34,4 @@ public class UserServiceApplicationTests {
         System.out.println(securityServiceFactoryBean);
         System.out.println(securityServiceFactoryBean.getObject());
     }
-
 }

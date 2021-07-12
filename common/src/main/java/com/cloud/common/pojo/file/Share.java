@@ -1,15 +1,18 @@
 package com.cloud.common.pojo.file;
 
+import com.cloud.common.pojo.User;
+
 import java.util.Date;
 
 public class Share {
     private Integer id;
-    private Integer uid;
-    private Integer fid;
+    private User user;
+    private UserFile userFile;
     private Status status;
     private String token;
     private Date gmt_create; // 创建时间
     private Date gmt_modified; //最后修改时间
+    private Date invalid_time;
 
     public Integer getId() {
         return id;
@@ -19,20 +22,20 @@ public class Share {
         this.id = id;
     }
 
-    public Integer getUid() {
-        return uid;
+    public User getUser() {
+        return user;
     }
 
-    public void setUid(Integer uid) {
-        this.uid = uid;
+    public void setUser(User user) {
+        this.user = user;
     }
 
-    public Integer getFid() {
-        return fid;
+    public UserFile getUserFile() {
+        return userFile;
     }
 
-    public void setFid(Integer fid) {
-        this.fid = fid;
+    public void setUserFile(UserFile userFile) {
+        this.userFile = userFile;
     }
 
     public Status getStatus() {
@@ -67,16 +70,25 @@ public class Share {
         this.gmt_modified = gmt_modified;
     }
 
+    public Date getInvalid_time() {
+        return invalid_time;
+    }
+
+    public void setInvalid_time(Date invalid_time) {
+        this.invalid_time = invalid_time;
+    }
+
     @Override
     public String toString() {
         return "Share{" +
                 "id=" + id +
-                ", uid=" + uid +
-                ", fid=" + fid +
+                ", user=" + user +
+                ", userFile=" + userFile +
                 ", status=" + status +
                 ", token='" + token + '\'' +
                 ", gmt_create=" + gmt_create +
                 ", gmt_modified=" + gmt_modified +
+                ", invalid_time=" + invalid_time +
                 '}';
     }
 }

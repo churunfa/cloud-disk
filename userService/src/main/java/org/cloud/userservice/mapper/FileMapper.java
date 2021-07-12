@@ -10,8 +10,13 @@ import java.util.List;
 
 @Mapper
 public interface FileMapper {
+
+    @Select("select * from user_file where id = #{id}")
+    UserFile queryUserFileById(int id);
+
     @Select("select * from file where id = #{id}")
     FileDB queryFileById(int id);
+
 
     @Select("select * from user where id = #{id} and deleted = 0;")
     User queryUserById(int id);
@@ -57,6 +62,10 @@ public interface FileMapper {
             "order by fileType desc",
             "</script>"
     })
+    @Results({
+            @Result(column = "uid", property = "user", one = @One(select = "org.cloud.userservice.mapper.FileMapper.queryUserById")),
+            @Result(column = "file_id", property = "file", one = @One(select = "org.cloud.userservice.mapper.FileMapper.queryFileById"))
+    })
     List<UserFile> queryAllUserFile(UserFile userFile);
 
     @Select({
@@ -88,7 +97,7 @@ public interface FileMapper {
             "<if test=\"file_name != null\">file_name = #{file_name},</if>",
             "<if test=\"dir != null\">dir = #{dir},</if>",
             "<if test=\"fileType != null\">fileType = #{fileType},</if>",
-            "<if test=\"`delete` != null\">`delete` = #{delete},</if>",
+            "<if test=\"delete != null\">`delete` = #{delete},</if>",
             "<if test=\"delete_time != null\">delete_time = #{delete_time},</if>",
             "<if test=\"gmt_create != null\">gmt_create = #{gmt_create},</if>",
             "<if test=\"gmt_modified != null\">gmt_modified = #{gmt_modified},</if>",
@@ -135,5 +144,8 @@ public interface FileMapper {
 
     @Update("update user_file set `delete` = 1, delete_time = #{date} where uid = #{uid} and dir like  concat(#{dir}, '%') and `delete` = 0")
     int updateDeleteByDir(@Param("uid") int uid, @Param("dir") String dir, @Param("date") Date date);
+
+    @Update("UPDATE user_file set dir = concat(#{newDir},trim(LEADING #{oldDir} FROM dir)) WHERE `delete` = 0 and uid = #{uid} and dir LIKE concat(#{oldDir}, '%')")
+    int updateDirName(@Param("oldDir") String oldDir, @Param("newDir") String newDir, @Param("uid") int uid);
 
 }

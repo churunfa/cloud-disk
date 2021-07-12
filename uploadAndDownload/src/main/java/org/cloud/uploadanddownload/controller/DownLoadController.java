@@ -2,7 +2,6 @@ package org.cloud.uploadanddownload.controller;
 
 import com.cloud.common.pojo.AuthorizationUser;
 import com.cloud.common.pojo.User;
-import com.cloud.common.pojo.file.ZipFile;
 import org.churunfa.security.grant.auth.Login;
 import org.cloud.uploadanddownload.service.DownLoadService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,4 +39,14 @@ public class DownLoadController {
         User user = authorizationUser.getUser();
         return downLoadService.downloads(list, user);
     }
+
+    @RequestMapping("/share/download")
+    public ResponseEntity<byte[]> shareDownload(@RequestBody Map data_map) {
+        int id = Integer.parseInt((String) data_map.get("id"));
+        String password = (String) data_map.get("password");
+        String filename = (String) data_map.get("filename");
+
+        return downLoadService.shareDownload(id, password, filename);
+    }
+
 }

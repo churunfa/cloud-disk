@@ -49,4 +49,12 @@ public class DownLoadController {
         return downLoadService.shareDownload(id, password, filename);
     }
 
+    @Login
+    @RequestMapping("/getImage/{st}")
+    public ResponseEntity<byte[]> getImage(@PathVariable("st") int st, AuthorizationUser authorizationUser) {
+        User user = authorizationUser.getUser();
+        System.out.println(user);
+        return downLoadService.getImage(user, st);
+    }
+
 }

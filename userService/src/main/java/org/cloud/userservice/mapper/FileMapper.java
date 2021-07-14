@@ -2,6 +2,7 @@ package org.cloud.userservice.mapper;
 
 import com.cloud.common.pojo.User;
 import com.cloud.common.pojo.file.FileDB;
+import com.cloud.common.pojo.file.Recycle;
 import com.cloud.common.pojo.file.UserFile;
 import org.apache.ibatis.annotations.*;
 
@@ -12,6 +13,9 @@ import java.util.List;
 public interface FileMapper {
 
     @Select("select * from user_file where id = #{id}")
+    @Results({
+            @Result(column = "uid", property = "user", one = @One(select = "org.cloud.userservice.mapper.FileMapper.queryUserById")),
+    })
     UserFile queryUserFileById(int id);
 
     @Select("select * from file where id = #{id}")
@@ -67,6 +71,33 @@ public interface FileMapper {
             @Result(column = "file_id", property = "file", one = @One(select = "org.cloud.userservice.mapper.FileMapper.queryFileById"))
     })
     List<UserFile> queryAllUserFile(UserFile userFile);
+
+
+    @Select({
+            "<script>",
+            "select * from user_file",
+            "<where>",
+            "<if test=\"id != null\">id = #{id} and</if>",
+            "<if test=\"user.id != null\">uid = #{user.id} and</if>",
+            "<if test=\"file.id != null\">file_id = #{file.id} and</if>",
+            "<if test=\"file_name != null\">file_name = #{file_name} and</if>",
+            "<if test=\"dir != null\">dir = #{dir} and</if>",
+            "<if test=\"fileType != null\">fileType = #{fileType} and</if>",
+            "<if test=\"delete_time != null\">delete_time = #{delete_time} and</if>",
+            "<if test=\"gmt_create != null\">gmt_create = #{gmt_create} and</if>",
+            "<if test=\"gmt_modified != null\">gmt_modified = #{gmt_modified} and</if>",
+            "<if test=\"size != null\">size = #{size} and</if>",
+            "`delete` = 1",
+            "</where>",
+            "order by fileType desc",
+            "</script>"
+    })
+    @Results({
+            @Result(column = "uid", property = "user", one = @One(select = "org.cloud.userservice.mapper.FileMapper.queryUserById")),
+            @Result(column = "file_id", property = "file", one = @One(select = "org.cloud.userservice.mapper.FileMapper.queryFileById"))
+    })
+    List<UserFile> queryAllDeleteUserFile(UserFile userFile);
+
 
     @Select({
             "<script>",
@@ -145,7 +176,13 @@ public interface FileMapper {
     @Update("update user_file set `delete` = 1, delete_time = #{date} where uid = #{uid} and dir like  concat(#{dir}, '%') and `delete` = 0")
     int updateDeleteByDir(@Param("uid") int uid, @Param("dir") String dir, @Param("date") Date date);
 
+    @Select("select * from user_file where uid = #{uid} and dir like  concat(#{dir}, '%') and `delete` = 0")
+    List<UserFile> queryListDir(@Param("uid") int uid, @Param("dir") String dir);
+
     @Update("UPDATE user_file set dir = concat(#{newDir},trim(LEADING #{oldDir} FROM dir)) WHERE `delete` = 0 and uid = #{uid} and dir LIKE concat(#{oldDir}, '%')")
     int updateDirName(@Param("oldDir") String oldDir, @Param("newDir") String newDir, @Param("uid") int uid);
+
+    @Select("select id user_file_id, concat(#{newDir}, trim(LEADING #{oldDir} FROM dir)) recycle_path, file_name recycle_name  from user_file where id = #{id}")
+    Recycle replaceDir(int id, String oldDir, String newDir);
 
 }

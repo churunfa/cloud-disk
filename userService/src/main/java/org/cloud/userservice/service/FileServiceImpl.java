@@ -1,16 +1,17 @@
 package org.cloud.userservice.service;
 
 import com.cloud.common.pojo.PageBean;
-import com.cloud.common.pojo.ShareMsg;
 import com.cloud.common.pojo.User;
 import com.cloud.common.pojo.file.*;
 import org.cloud.userservice.mapper.FileMapper;
+import org.cloud.userservice.mapper.RecycleMapper;
 import org.cloud.userservice.mapper.ShareMapper;
 import org.cloud.userservice.mapper.UserMapper;
 import org.cloud.userservice.utils.IPUtil;
 import org.cloud.userservice.utils.ShareParse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.net.SocketException;
 import java.util.*;
@@ -23,6 +24,8 @@ public class FileServiceImpl implements FileService{
     UserMapper userMapper;
 
     ShareMapper shareMapper;
+
+    RecycleUtilsService recycleUtilsService;
 
     @Autowired
     public void setFileMapper(FileMapper fileMapper) {
@@ -37,6 +40,11 @@ public class FileServiceImpl implements FileService{
     @Autowired
     public void setShareMapper(ShareMapper shareMapper) {
         this.shareMapper = shareMapper;
+    }
+
+    @Autowired
+    public void setRecycleUtilsService(RecycleUtilsService recycleUtilsService) {
+        this.recycleUtilsService = recycleUtilsService;
     }
 
     @Override
@@ -61,7 +69,10 @@ public class FileServiceImpl implements FileService{
         if (pageBean.getPageNo() <= 0 || pageBean.getPageNo() > pageBean.getTotalPages()) return null;
 
 
-        List<UserFile> userFiles = fileMapper.queryByUserFile(userFile, (pageBean.getPageNo() - 1) * pageBean.getPageSize(), pageBean.getPageSize());
+        List<UserFile> userFiles = fileMapper.queryByUserFile(
+                userFile,
+                (pageBean.getPageNo() - 1) * pageBean.getPageSize(),
+                pageBean.getPageSize());
         pageBean.setPageData(userFiles);
         return pageBean;
     }
@@ -108,6 +119,7 @@ public class FileServiceImpl implements FileService{
     }
 
     @Override
+    @Transactional
     public Map delete(Integer fileId, User user) {
 
         Map<String, Object> map = new HashMap<>();
@@ -133,29 +145,56 @@ public class FileServiceImpl implements FileService{
 
         userFile = userFiles.get(0);
 
+
+        Map map1 = recycleUtilsService.addRecycle(userFile, userFile.getDir(), "/", true);
+        String newName = (String) map1.get("name");
+
         if (userFile.getFileType() == FileType.DIR) {
 
             String dir = userFile.getDir() + userFile.getFile_name() + "/";
+//            String newDir = userFile.getDir() + newName + "/";
+            String newDir = "/" + newName + "/";
 
-            int count = fileMapper.updateDeleteByDir(user.getId(), dir, new Date());
+
+//            int count = fileMapper.updateDeleteByDir(user.getId(), dir, new Date());
+
+            List<UserFile> userDirs = fileMapper.queryListDir(user.getId(), dir);
+
+            int count = 0;
+
+            for (UserFile userDir : userDirs) {
+                System.out.println("删除文件中。。。");
+                System.out.println(userDir);
+                System.out.println(dir);
+                Map map2 = recycleUtilsService.addRecycle(userDir, dir, newDir, false);
+                if ((Boolean)map2.get("success")) count ++ ;
+                else {
+                    new RuntimeException();
+                    map.put("success", false);
+                    map.put("msg", "删除失败");
+                    return map;
+                }
+            }
             System.out.println("删除" + count + "个子项目");
         }
 
-        UserFile updateUserFile = new UserFile();
+//        UserFile updateUserFile = new UserFile();
+//
+//        updateUserFile.setId(userFile.getId());
+//        updateUserFile.setUser(new User());
+//        updateUserFile.setFile(new FileDB());
+//
+//        updateUserFile.setDelete(true);
+//        updateUserFile.setDelete_time(new Date());
+//
+//        int i = fileMapper.updateUserFile(updateUserFile);
 
-        updateUserFile.setId(userFile.getId());
-        updateUserFile.setUser(new User());
-        updateUserFile.setFile(new FileDB());
-
-        updateUserFile.setDelete(true);
-        updateUserFile.setDelete_time(new Date());
-
-        int i = fileMapper.updateUserFile(updateUserFile);
 
         Long userSize = userMapper.getUserSize(user.getId());
+        if (userSize == null) userSize = 0L;
         userMapper.updateUserSize(userSize, user.getId());
 
-        if (i != 0) {
+        if ((Boolean) map1.get("success")) {
             map.put("success", true);
             map.put("msg", "删除成功");
             return map;
@@ -167,6 +206,7 @@ public class FileServiceImpl implements FileService{
     }
 
     @Override
+    @Transactional
     public Map deletes(List<Integer> list, User user) {
 
         int tot = list.size();
@@ -524,7 +564,7 @@ public class FileServiceImpl implements FileService{
         System.out.println(new Date() + "---" + new Date().getTime());
         System.out.println(share.getGmt_create() + "---" + share.getInvalid_time().getTime());
 
-        if (new Date().getTime() > share.getInvalid_time().getTime()) {
+        if (new Date().getTime() > share.getInvalid_time().getTime() || share.getUserFile() == null) {
             System.out.println("资源失效");
             Share share1 = new Share();
             share1.setId(share.getId());
@@ -556,6 +596,9 @@ public class FileServiceImpl implements FileService{
         ArrayList<Map> maps = new ArrayList<>();
 
         for (Share share1 : shares) {
+
+            if (share1.getUserFile() == null) continue;
+
             HashMap<String, Object> map = new HashMap<>();
             map.put("id", share1.getId());
             map.put("filename", share1.getUserFile().getFile_name());

@@ -92,4 +92,11 @@ public class DownLoadServiceImpl implements DownLoadService{
         return resourcesService.download(share.getUserFile().getFile().getId(), name);
     }
 
+    @Override
+    public ResponseEntity<byte[]> getImage(User user, int st) {
+        UserFile userFile = userFileMapper.queryImages(user.getId(), st);
+        if (userFile == null) return null;
+        return resourcesService.download(userFile.getFile().getId(), userFile.getFile_name());
+    }
+
 }

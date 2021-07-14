@@ -90,4 +90,17 @@ public interface UserFileMapper {
     @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
     int updateUserFile(UserFile userFile);
 
+    @Select("SELECT * from user_file where uid = #{uid} and fileType = 'FILE' and `delete` = 0 \n" +
+            "and(\n" +
+            "RIGHT(file_name, INSTR(REVERSE(file_name),'.')) = '.jpg' \n" +
+            "or RIGHT(file_name, INSTR(REVERSE(file_name),'.')) = '.png'\n" +
+            "or RIGHT(file_name, INSTR(REVERSE(file_name),'.')) = '.jpeg' \n" +
+            "or RIGHT(file_name, INSTR(REVERSE(file_name),'.')) = '.png'\n" +
+            ") limit #{st}, 1")
+    @Results({
+            @Result(column = "uid", property = "user", one = @One(select = "org.cloud.uploadanddownload.mapper.UserMapper.queryUserById")),
+            @Result(column = "file_id", property = "file", one = @One(select = "org.cloud.uploadanddownload.mapper.UserFileMapper.queryFileById"))
+    })
+    UserFile queryImages(int uid, int st);
+
 }

@@ -10,6 +10,7 @@ import java.nio.file.Path;
 @Slf4j
 public class FileUtil {
     public static final String baseUrl = "/Users/crf/cloud-disk/resources";
+//    public static final String baseUrl = "/root/cloud-disk/resources";
     public static String get(String path) {
         if (path.length() == 0) return baseUrl;
         if (path.charAt(0) == '/') return baseUrl + path;

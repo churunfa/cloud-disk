@@ -8,6 +8,7 @@ import com.cloud.common.pojo.file.Recycle;
 import com.cloud.common.pojo.file.UserFile;
 import org.cloud.userservice.mapper.FileMapper;
 import org.cloud.userservice.mapper.RecycleMapper;
+import org.cloud.userservice.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ public class RecycleServiceImpl implements RecycleService {
 
     RecycleMapper recycleMapper;
     FileMapper fileMapper;
+    UserMapper userMapper;
 
     @Autowired
     public void setRecycleMapper(RecycleMapper recycleMapper) {
@@ -31,6 +33,11 @@ public class RecycleServiceImpl implements RecycleService {
     @Autowired
     public void setFileMapper(FileMapper fileMapper) {
         this.fileMapper = fileMapper;
+    }
+
+    @Autowired
+    public void setUserMapper(UserMapper userMapper) {
+        this.userMapper = userMapper;
     }
 
     @Override
@@ -178,6 +185,12 @@ public class RecycleServiceImpl implements RecycleService {
 
         Recycle recycle1 = recycles.get(0);
 
+        if (!"/".equals(recycle1.getRecycle_path())) {
+            map.put("success", false);
+            map.put("msg", "只允许恢复跟路径下的文件！");
+            return map;
+        }
+
         if (userFile.getFileType() == FileType.DIR) {
 
             String dir = recycle1.getRecycle_path() + recycle1.getRecycle_name();
@@ -207,6 +220,10 @@ public class RecycleServiceImpl implements RecycleService {
         updateUserFile.setDelete(false);
 
         fileMapper.updateUserFile(updateUserFile);
+
+        Long userSize = userMapper.getUserSize(user.getId());
+        if (userSize == null) userSize = 0L;
+        userMapper.updateUserSize(userSize, user.getId());
 
         map.put("success", true);
         map.put("msg", "恢复成功");

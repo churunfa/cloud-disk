@@ -1,6 +1,12 @@
 package org.cloud.uploadanddownload.controller;
 
+import com.cloud.common.model.RestResult;
+import com.cloud.common.pojo.file.Chunk;
+import com.cloud.common.pojo.file.FileDB;
 import com.cloud.common.pojo.file.ZipFile;
+import feign.Headers;
+import feign.RequestLine;
+import org.apache.ibatis.annotations.Param;
 import org.cloud.uploadanddownload.config.MultipartSupportConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
@@ -21,4 +27,11 @@ public interface ResourcesService {
 
     @RequestMapping("/resources/download")
     ResponseEntity<byte[]> download(@RequestParam("id") Integer id, @RequestParam("filename") String filename);
+
+    @RequestMapping(value = "/chunk/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    RestResult<Chunk> chunkUpload(@RequestPart("file") MultipartFile file, @RequestParam("user_file_id") Integer user_file_id, @RequestParam("chunk_number") Integer chunk_number);
+
+    @RequestMapping("/chunk/merge")
+    RestResult<FileDB> merge(@RequestParam("user_file_id") Integer user_file_id, @RequestParam("chunk_size") Long chunk_size, @RequestParam("tot_size") Long tot_size, @RequestParam("name") String name);
+
 }

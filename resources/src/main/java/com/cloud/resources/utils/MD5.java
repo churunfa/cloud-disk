@@ -32,7 +32,7 @@ public class MD5 {
         try {
             MessageDigest MD5 = MessageDigest.getInstance("MD5");
             fileInputStream = new FileInputStream(file);
-            byte[] buffer = new byte[8192];
+            byte[] buffer = new byte[1024 * 1024];
             int length;
             while ((length = fileInputStream.read(buffer)) != -1) {
                 MD5.update(buffer, 0, length);

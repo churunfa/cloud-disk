@@ -37,6 +37,30 @@ public interface UserFileMapper {
     })
     List<UserFile> queryByUserFile(UserFile userFile);
 
+    @Select({
+            "<script>",
+            "select * from user_file",
+            "<where>",
+            "<if test=\"id != null\">id = #{id}</if>",
+            "<if test=\"user.id != null\">and uid = #{user.id}</if>",
+            "<if test=\"file.id != null\">and file_id = #{file.id}</if>",
+            "<if test=\"file_name != null\">and file_name = #{file_name}</if>",
+            "<if test=\"delete != null\">and `delete` = #{delete}</if>",
+            "<if test=\"dir != null\">and dir = #{dir}</if>",
+            "<if test=\"fileType != null\">and fileType = #{fileType}</if>",
+            "<if test=\"delete_time != null\">and delete_time = #{delete_time}</if>",
+            "<if test=\"gmt_create != null\">and gmt_create = #{gmt_create}</if>",
+            "<if test=\"gmt_modified != null\">and gmt_modified = #{gmt_modified}</if>",
+            "<if test=\"size != null\">size = #{size}</if>",
+            "</where>",
+            "</script>"
+    })
+    @Results({
+            @Result(column = "uid", property = "user", one = @One(select = "org.cloud.uploadanddownload.mapper.UserMapper.queryUserById")),
+            @Result(column = "file_id", property = "file", one = @One(select = "org.cloud.uploadanddownload.mapper.UserFileMapper.queryFileById"))
+    })
+    List<UserFile> queryALLByUserFile(UserFile userFile);
+
     @Insert({
             "<script>",
             "insert into user_file",
@@ -46,7 +70,7 @@ public interface UserFileMapper {
             "<if test=\"file_name != null\">file_name,</if>",
             "<if test=\"dir != null\">dir,</if>",
             "<if test=\"fileType != null\">fileType,</if>",
-            "<if test=\"delete != null\">delete,</if>",
+            "<if test=\"delete != null\">`delete`,</if>",
             "<if test=\"delete_time != null\">delete_time,</if>",
             "<if test=\"gmt_create != null\">gmt_create,</if>",
             "<if test=\"gmt_modified != null\">gmt_modified,</if>",
@@ -102,5 +126,8 @@ public interface UserFileMapper {
             @Result(column = "file_id", property = "file", one = @One(select = "org.cloud.uploadanddownload.mapper.UserFileMapper.queryFileById"))
     })
     UserFile queryImages(int uid, int st);
+
+    @Select("select * from user_file where uid = #{uid} and file_id is null and `delete` = 1")
+    List<UserFile> getUploading(int uid);
 
 }

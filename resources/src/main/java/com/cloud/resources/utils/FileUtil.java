@@ -10,7 +10,8 @@ import java.nio.file.Path;
 @Slf4j
 public class FileUtil {
     public static final String baseUrl = "/Users/crf/cloud-disk/resources";
-//    public static final String baseUrl = "/root/cloud-disk/resources";
+
+    //    public static final String baseUrl = "/root/cloud-disk/resources";
     public static String get(String path) {
         if (path.length() == 0) return baseUrl;
         if (path.charAt(0) == '/') return baseUrl + path;
@@ -82,16 +83,22 @@ public class FileUtil {
     }
 
     public static String getExtension(String name) {
-        String fileType=name.substring(name.lastIndexOf("."),name.length());
+        String fileType = name.substring(name.lastIndexOf("."));
         return fileType;
     }
 
     private static Boolean check(BufferedInputStream fir, BufferedInputStream sec) throws IOException {
+
+        byte[] firBuff = new byte[1024 * 1024];
+        byte[] secBuff = new byte[1024 * 1024];
+        int firLen = 0;
+        int secLen = 0;
         if (fir.available() == sec.available()) {
-            while (fir.read() != -1 && sec.read() != -1) {
-                if (fir.read() != sec.read()) {
+            while ((firLen = fir.read(firBuff)) != -1 && (secLen = sec.read(secBuff)) != -1) {
+                if (firLen != secLen) {
                     return false;
                 }
+                for (int i = 0; i < firLen; i++) if (firBuff[i] != secBuff[i]) return false;
             }
             return true;
         } else {
@@ -110,7 +117,7 @@ public class FileUtil {
             return check(fir, sec);
 
         } finally {
-            if (fir != null){
+            if (fir != null) {
                 fir.close();
             }
             if (sec != null) {
@@ -128,7 +135,7 @@ public class FileUtil {
             return check(fir, sec);
 
         } finally {
-            if (fir != null){
+            if (fir != null) {
                 fir.close();
             }
             if (sec != null) {
@@ -137,4 +144,46 @@ public class FileUtil {
         }
     }
 
+    public static Boolean merge(String f1, String f2) {
+
+        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f1));
+             BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(f2, true));) {
+
+            byte[] bytes = new byte[1024 * 1024];
+
+            int len = 0;
+
+            while ((len = bis.read(bytes)) != -1) {
+                bos.write(bytes, 0, len);
+            }
+            bos.flush();
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return false;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        return true;
+    }
+
+    public static boolean deleteFile(File dirFile) {
+        // 如果dir对应的文件不存在，则退出
+        if (!dirFile.exists()) {
+            return false;
+        }
+
+        if (dirFile.isFile()) {
+            return dirFile.delete();
+        } else {
+
+            for (File file : dirFile.listFiles()) {
+                deleteFile(file);
+            }
+        }
+
+        return dirFile.delete();
+    }
 }

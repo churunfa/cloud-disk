@@ -526,20 +526,8 @@ public class FileServiceImpl implements FileService{
             map.put("msg", "分享失败");
             return map;
         }
-
-        try {
-
-            String host = IPUtil.getInterIP2();
-            System.out.println(host);
-
-            map.put("success", true);
-            map.put("url", "http://" + host + ":8080/share_download/" + share.getId());
-        } catch (SocketException e) {
-            e.printStackTrace();
-
-            map.put("success", false);
-            map.put("msg", "连接获取失败");
-        }
+        map.put("success", true);
+        map.put("url", "http://localhost:8080/share_download/" + share.getId());
 
         return map;
     }
@@ -607,14 +595,7 @@ public class FileServiceImpl implements FileService{
             map.put("gmt_modified", share1.getGmt_modified());
             map.put("invalid_time", share1.getInvalid_time());
             map.put("password", share1.getToken());
-
-            String host = null;
-            try {
-                host = IPUtil.getInterIP2();
-            } catch (SocketException e) {
-                e.printStackTrace();
-            }
-            map.put("url", "http://" + host + ":8080/share_download/" + share1.getId());;
+            map.put("url", "http://localhost:8080/share_download/" + share1.getId());;
             maps.add(map);
         }
 

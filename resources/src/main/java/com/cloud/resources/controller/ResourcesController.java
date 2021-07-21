@@ -56,4 +56,5 @@ public class ResourcesController {
     public ResponseEntity<byte[]> download(@RequestParam("id") Integer id, @RequestParam("filename") String filename) {
         return resourcesService.downloadByPath(id, filename);
     }
+
 }

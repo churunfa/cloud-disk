@@ -7,6 +7,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.lang.reflect.Method;
@@ -30,13 +31,20 @@ public class LoginInterceptor implements HandlerInterceptor {
 
         if (method.isAnnotationPresent(Login.class) || method.getDeclaringClass().isAnnotationPresent(Login.class)) {
 
-
             String token = request.getHeader(HttpHeaders.AUTHORIZATION);
+
+            System.out.println(token);
+
+            if (token == null) {
+                request.getRequestDispatcher("/error/unauthorized/").forward(request, response);
+                return false;
+            }
+
             Map map = securityService.verifyJwtToken(token);
             if ((Boolean) map.get("success")) {
                 return HandlerInterceptor.super.preHandle(request, response, handler);
             }else {
-                response.sendRedirect("/error/PermissionDenied/");
+                request.getRequestDispatcher("/error/forbidden/").forward(request, response);
                 return false;
             }
         }

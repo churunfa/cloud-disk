@@ -3,12 +3,14 @@ package com.cloud.resources;
 import com.cloud.common.pojo.file.FileDB;
 import com.cloud.resources.mapper.FileMapper;
 import com.cloud.resources.utils.FileUtil;
+import com.cloud.resources.utils.MD5;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 
@@ -47,6 +49,29 @@ public class FileSaveTest {
         String f2 = FileUtil.get("/block-0/10.xlsx");
         Boolean flag = FileUtil.compareFile(f1, f2);
         System.out.println(flag);
+    }
+    @Test
+    public void check2() throws IOException {
+        String f1 = "/Users/crf/cloud-disk/resources/block-1/128.jpg";
+        String f2 = "/Users/crf/cloud-disk/resources/block-1/108.jpg";
+        Boolean flag = FileUtil.compareFile(f1, f2);
+        System.out.println(flag);
+    }
+
+    @Test
+    public void checkBig() throws IOException {
+        String f1 = "/Users/crf/Documents/iso/cn_windows_10_consumer_editions_version_20h2_updated_dec_2020_x64_dvd_b7d6e09d.iso";
+        String f2 = "/Users/crf/Documents/iso/cn_windows_10_consumer_editions_version_20h2_updated_dec_2020_x64_dvd_b7d6e09d.iso";
+
+        Boolean flag = FileUtil.compareFile(f1, f2);
+        System.out.println(flag);
+    }
+    @Test
+    public void md5Big() throws IOException {
+        String f = "/Users/crf/Documents/iso/cn_windows_10_consumer_editions_version_20h2_updated_dec_2020_x64_dvd_b7d6e09d.iso";
+
+        String md5 = MD5.getMD5(new File(f));
+        System.out.println(md5);
     }
 
 }

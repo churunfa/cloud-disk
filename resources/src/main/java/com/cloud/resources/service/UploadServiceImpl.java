@@ -1,6 +1,11 @@
 package com.cloud.resources.service;
 
+import com.cloud.common.pojo.User;
+import com.cloud.common.pojo.file.Chunk;
+import com.cloud.common.pojo.file.ChunkStatus;
 import com.cloud.common.pojo.file.FileDB;
+import com.cloud.common.pojo.file.UserFile;
+import com.cloud.resources.mapper.ChunkMapper;
 import com.cloud.resources.mapper.FileMapper;
 import com.cloud.resources.utils.FileUtil;
 import com.cloud.resources.utils.MD5;
@@ -22,6 +27,9 @@ public class UploadServiceImpl implements UploadService{
 
     FileMapper fileMapper;
 
+    ChunkMapper chunkMapper;
+
+    FileService fileService;
 
     public BlockingQueue<Integer> queue;
 
@@ -31,11 +39,23 @@ public class UploadServiceImpl implements UploadService{
         queue = new LinkedBlockingQueue(list);
     }
 
-
-
     @Autowired
     public void setFileMapper(FileMapper fileMapper) {
         this.fileMapper = fileMapper;
+    }
+
+    @Autowired
+    public void setChunkMapper(ChunkMapper chunkMapper) {
+        this.chunkMapper = chunkMapper;
+    }
+
+    @Autowired
+    public void setFileService(FileService fileService) {
+        this.fileService = fileService;
+    }
+
+    public void setQueue(BlockingQueue<Integer> queue) {
+        this.queue = queue;
     }
 
     private FileDB insert(String md5, String name) {
@@ -174,4 +194,183 @@ public class UploadServiceImpl implements UploadService{
             }
         }
     }
+
+    @Override
+    @Transactional
+    public Chunk chunkUpload(MultipartFile file, Integer user_file_id, Integer chunk_number) {
+        System.out.println(file.getOriginalFilename());
+        System.out.println(user_file_id);
+        System.out.println(chunk_number);
+        int block = user_file_id / 100;
+
+        // chunk-0/1/1.txt
+        String path_ = String.format("/chunk-%d/%d", block, user_file_id);
+        String name = String.format("%d%s", chunk_number, FileUtil.getExtension(file.getOriginalFilename()));
+
+        String path = FileUtil.get(path_);
+
+        System.out.println(path + name);
+
+        File chunk_file = new File(path);
+        if (!chunk_file.exists()) chunk_file.mkdirs();
+
+
+        Chunk queryChunk = chunkMapper.queryChunk(user_file_id, chunk_number);
+
+        if (queryChunk == null) {
+            Chunk chunk = new Chunk();
+            chunk.setPath(path_);
+            chunk.setSize(file.getSize());
+            chunk.setName(name);
+            chunk.setMd5(MD5.getMD5(file));
+            chunk.setUser_file_id(user_file_id);
+            chunk.setFileDB(new FileDB());
+            chunk.setGmt_create(new Date());
+            chunk.setGmt_modified(new Date());
+            chunk.setChunk_number(chunk_number);
+
+            chunkMapper.insert(chunk);
+
+            try {
+                file.transferTo(new File(path + "/" + name));
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new RuntimeException();
+            }
+
+            Chunk updateChunk = new Chunk();
+
+            updateChunk.setId(chunk.getId());
+            updateChunk.setFileDB(new FileDB());
+            updateChunk.setGmt_modified(new Date());
+            updateChunk.setStatus(ChunkStatus.PENDING);
+
+            chunkMapper.update(updateChunk);
+
+
+            chunk.setGmt_modified(updateChunk.getGmt_modified());
+            chunk.setStatus(ChunkStatus.PENDING);
+            return chunk;
+
+        }
+
+        return queryChunk;
+    }
+
+    @Override
+    @Transactional
+    public FileDB merge(Integer user_file_id, Long chunk_size, Long tot_size, String name) {
+        Long count = (tot_size + chunk_size - 1) / chunk_size;
+        System.out.println("块数：" + count);
+
+        String margePath = null;
+        String path1 = null;
+        String path2 = null;
+        String filePath = null;
+
+        for (int i = 0; i < count; i++) {
+            Chunk chunk = chunkMapper.queryChunk(user_file_id, i);
+
+            if (chunk == null || chunk.getStatus() == ChunkStatus.UPLOADING) {
+                System.out.println("编号为" + i + "的文件未上传完成");
+                return null;
+            }
+
+            String path = FileUtil.get(chunk.getPath());
+
+            path1 = path + "/" + chunk.getName();
+            path2 = path + "/merge-" + name;
+
+            margePath = chunk.getPath() + "/merge-" + name;
+
+            filePath =FileUtil.get(chunk.getPath());
+
+            if (chunk.getStatus() == ChunkStatus.FINISH) continue;
+
+            if (chunk.getChunk_number() != count - 1 && !chunk.getSize().equals(chunk_size)) {
+                System.out.println("文件块受损");
+                chunkMapper.delete(chunk.getId());
+                return null;
+            }
+
+            if (i == 0) new File(path2).delete();
+
+            Boolean merge = FileUtil.merge(path1, path2);
+            if (!merge) {
+                System.out.println("合并失败。。");
+                return null;
+            }
+
+            Chunk updateChunk = new Chunk();
+            updateChunk.setId(chunk.getId());
+            updateChunk.setFileDB(new FileDB());
+            updateChunk.setStatus(ChunkStatus.FINISH);
+            updateChunk.setGmt_modified(new Date());
+            chunkMapper.update(updateChunk);
+        }
+
+        System.out.println("去重逻辑。。。。");
+        System.out.println(path2);
+        File file = new File(path2);
+
+        String md5 = MD5.getMD5(file);
+
+        List<FileDB> fileDBS = fileMapper.queryByMd5(md5);
+
+        if (fileDBS.isEmpty()){
+            FileDB fileDB = fileService.moveFile(margePath);
+
+            UserFile userFile = new UserFile();
+            userFile.setId(user_file_id);
+            userFile.setGmt_modified(new Date());
+            userFile.setFile(fileDB);
+            userFile.setDelete(false);
+            userFile.setUser(new User());
+            fileMapper.updateUserFile(userFile);
+
+            File file1 = new File(filePath);
+            FileUtil.deleteFile(file1);
+
+            return fileDB;
+        }
+
+        for (FileDB fileDB : fileDBS) {
+            try {
+                Boolean flag = FileUtil.compareFile(FileUtil.get(fileDB.getPath() + "/" + fileDB.getFilename()), FileUtil.get(margePath));
+                if (flag) {
+                    UserFile userFile = new UserFile();
+                    userFile.setId(user_file_id);
+                    userFile.setGmt_modified(new Date());
+                    userFile.setUser(new User());
+                    userFile.setDelete(false);
+                    userFile.setFile(fileDB);
+                    fileMapper.updateUserFile(userFile);
+
+                    File file1 = new File(filePath);
+                    FileUtil.deleteFile(file1);
+
+                    return fileDB;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new RuntimeException();
+            }
+        }
+
+        FileDB fileDB = fileService.moveFile(margePath);
+
+        UserFile userFile = new UserFile();
+        userFile.setId(user_file_id);
+        userFile.setGmt_modified(new Date());
+        userFile.setDelete(false);
+        userFile.setUser(new User());
+        userFile.setFile(fileDB);
+        fileMapper.updateUserFile(userFile);
+
+        File file1 = new File(filePath);
+        FileUtil.deleteFile(file1);
+
+        return fileDB;
+    }
+
 }

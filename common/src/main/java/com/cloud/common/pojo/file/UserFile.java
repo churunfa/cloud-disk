@@ -1,6 +1,8 @@
 package com.cloud.common.pojo.file;
 
 import com.cloud.common.pojo.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Date;
 
@@ -65,10 +67,12 @@ public class UserFile {
         this.fileType = fileType;
     }
 
+    @JsonIgnore
     public Boolean getDelete() {
         return delete;
     }
 
+    @JsonProperty
     public void setDelete(Boolean delete) {
         this.delete = delete;
     }

@@ -55,4 +55,25 @@ public interface FileMapper {
     @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
     int update(FileDB fileDB);
 
+    @Update({
+            "<script>",
+            "update user_file",
+            "<set>",
+            "<if test=\"user.id != null\">uid = #{user.id},</if>",
+            "<if test=\"file.id != null\">file_id = #{file.id},</if>",
+            "<if test=\"file_name != null\">file_name = #{file_name},</if>",
+            "<if test=\"dir != null\">dir = #{dir},</if>",
+            "<if test=\"fileType != null\">fileType = #{fileType},</if>",
+            "<if test=\"delete != null\">`delete` = #{delete},</if>",
+            "<if test=\"delete_time != null\">delete_time = #{delete_time},</if>",
+            "<if test=\"gmt_create != null\">gmt_create = #{gmt_create},</if>",
+            "<if test=\"gmt_modified != null\">gmt_modified = #{gmt_modified},</if>",
+            "<if test=\"size != null\">size = #{size},</if>",
+            "</set>",
+            "where id = #{id}",
+            "</script>"
+    })
+    @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
+    int updateUserFile(UserFile userFile);
+
 }

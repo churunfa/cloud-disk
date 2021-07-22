@@ -3,16 +3,14 @@ package org.cloud.uploadanddownload.service;
 import com.cloud.common.model.RestResult;
 import com.cloud.common.model.RestResultUtils;
 import com.cloud.common.pojo.User;
-import com.cloud.common.pojo.file.Chunk;
-import com.cloud.common.pojo.file.FileDB;
-import com.cloud.common.pojo.file.FileType;
-import com.cloud.common.pojo.file.UserFile;
+import com.cloud.common.pojo.file.*;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemFactory;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.cloud.uploadanddownload.controller.ResourcesService;
 import org.cloud.uploadanddownload.mapper.ChunkMapper;
 import org.cloud.uploadanddownload.mapper.UserFileMapper;
+import org.cloud.uploadanddownload.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,6 +21,8 @@ import java.util.*;
 
 @Service
 public class ChunkServiceImpl implements ChunkService{
+
+    UserMapper userMapper;
 
     UserFileMapper userFileMapper;
 
@@ -45,13 +45,18 @@ public class ChunkServiceImpl implements ChunkService{
         this.chunkMapper = chunkMapper;
     }
 
+    @Autowired
+    public void setUserMapper(UserMapper userMapper) {
+        this.userMapper = userMapper;
+    }
+
     @Override
-    public Chunk chunkUpload(MultipartFile file, Integer user_file_id, User user, Integer chunkNo) {
+    public Chunk chunkUpload_(MultipartFile file, Integer user_file_id, User user, Integer chunkNo) {
         return chunkUpload(file, user_file_id, user, chunkNo,5 * 1024 * 1024);
     }
 
     @Override
-    public Chunk chunkUpload(MultipartFile file, Integer user_file_id, User user, Integer chunkNo, Integer chunkSize) {
+    public Chunk chunkUpload_(MultipartFile file, Integer user_file_id, User user, Integer chunkNo, Integer chunkSize) {
         try (InputStream is = file.getInputStream()) {
             byte[] bytes = new byte[chunkSize];
 
@@ -110,7 +115,44 @@ public class ChunkServiceImpl implements ChunkService{
     }
 
     @Override
+    public Chunk chunkUpload(MultipartFile file, Integer user_file_id, User user, Integer chunkNo) {
+        return chunkUpload(file, user_file_id, user, chunkNo,5 * 1024 * 1024);
+    }
+
+    private Boolean check(User user, int user_file_id) {
+        UserFile userFile = new UserFile();
+        userFile.setUser(user);
+        userFile.setId(user_file_id);
+        userFile.setFile(new FileDB());
+        List<UserFile> userFiles = userFileMapper.queryALLByUserFile(userFile);
+        return !userFiles.isEmpty();
+    }
+
+    @Override
+    public Chunk chunkUpload(MultipartFile file, Integer user_file_id, User user, Integer chunkNo, Integer chunkSize) {
+
+        if (!check(user, user_file_id)) return null;
+
+        RestResult<Chunk> upload = resourcesService.chunkUpload(file, user_file_id, chunkNo);
+
+        int count = 1;
+        for (int i = 0; i < 200; i++) {
+            if (upload.ok()) break;
+            count ++;
+            upload = resourcesService.chunkUpload(file, user_file_id, chunkNo);
+        }
+
+        System.out.println("尝试上传 " + count + " 次");
+
+        System.out.println(upload);
+        return upload.getData();
+    }
+
+    @Override
     public RestResult merge(Integer user_file_id, Long chunk_size, User user) {
+
+        if (!check(user, user_file_id)) return RestResultUtils.failed("无权限对此文件进行操作");
+
         UserFile userFile = new UserFile();
         userFile.setId(user_file_id);
         userFile.setUser(user);
@@ -140,9 +182,15 @@ public class ChunkServiceImpl implements ChunkService{
         queryUserFile.setDir(dir);
         queryUserFile.setFile_name(filename);
 
+        System.out.println(queryUserFile);
         List<UserFile> userFiles = userFileMapper.queryByUserFile(queryUserFile);
+        List<UserFile> userFiles1 = userFileMapper.queryUploadUserFIle(queryUserFile);
 
-        if (!userFiles.isEmpty()) return 0;
+        if (!userFiles.isEmpty() || !userFiles1.isEmpty()) return 0;
+
+        User user1 = userMapper.queryUserById(user.getId());
+        System.out.println(user1);
+        if (user1.getTotal_size() < user1.getCount_size() + size ) return -1;
 
         UserFile userFile = new UserFile();
         userFile.setUser(user);
@@ -154,6 +202,11 @@ public class ChunkServiceImpl implements ChunkService{
         userFile.setSize(size);
         userFile.setFile_name(filename);
         userFileMapper.insertUserFile(userFile);
+
+        Long l = userMapper.querySize(user.getId());
+        if (l == null) l = 0L;
+        userMapper.updateUserSize(l, user.getId());
+
         return userFile.getId();
     }
 
@@ -174,5 +227,39 @@ public class ChunkServiceImpl implements ChunkService{
             maps.add(map);
         }
         return maps;
+    }
+
+    @Override
+    public Boolean cancel(Integer user_file_id, User user) {
+        if (!check(user, user_file_id)) return false;
+        int count = userFileMapper.deleteUserFile(user_file_id, user.getId());
+        Long l = userMapper.querySize(user.getId());
+        if (l == null) l = 0L;
+        userMapper.updateUserSize(l, user.getId());
+        return count != 0;
+    }
+
+    @Override
+    public Integer getNext(Integer user_file_id, User user) {
+        if (!check(user, user_file_id)) return -1;
+
+        UserFile userFile = new UserFile();
+        userFile.setId(user_file_id);
+        userFile.setUser(user);
+        userFile.setFile(new FileDB());
+
+        List<UserFile> userFiles = userFileMapper.queryALLByUserFile(userFile);
+        userFile = userFiles.get(0);
+
+        Long totSize = userFile.getSize();
+        Long size = 5 * 1024 * 1024L;
+
+        Long count = (totSize + size - 1) / size;
+
+        Integer next = chunkMapper.getNext(user_file_id);
+        if (next == null) next = 0;
+        if (next >= count) return -2;
+
+        return next;
     }
 }

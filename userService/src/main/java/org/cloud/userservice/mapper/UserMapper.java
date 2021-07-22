@@ -7,10 +7,9 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface UserMapper {
 
-    @Select("SELECT sum(size) FROM user_file where uid = #{id} and `delete` = 0")
+    @Select("select sum(size) from user_file where uid = 1 and `delete` = 0 or (`delete` = #{uid} and file_id is null)")
     Long getUserSize(int id);
 
-    @Update("update `user` set count_size = #{size} where id = #{uid}")
+    @Update("update user set count_size = #{size} where id = #{uid}")
     int updateUserSize(Long size, int uid);
-
 }

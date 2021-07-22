@@ -37,6 +37,30 @@ public interface UserFileMapper {
     })
     List<UserFile> queryByUserFile(UserFile userFile);
 
+
+    @Select({
+            "<script>",
+            "select * from user_file",
+            "<where>",
+            "<if test=\"id != null\">id = #{id} and</if>",
+            "<if test=\"user.id != null\">uid = #{user.id} and</if>",
+            "<if test=\"file_name != null\">file_name = #{file_name} and</if>",
+            "<if test=\"dir != null\">dir = #{dir} and</if>",
+            "<if test=\"fileType != null\">fileType = #{fileType} and</if>",
+            "<if test=\"delete_time != null\">delete_time = #{delete_time} and</if>",
+            "<if test=\"gmt_create != null\">gmt_create = #{gmt_create} and</if>",
+            "<if test=\"gmt_modified != null\">gmt_modified = #{gmt_modified} and</if>",
+            "<if test=\"size != null\">size = #{size} and</if>",
+            "`delete` = 1 and file_id is null",
+            "</where>",
+            "</script>"
+    })
+    @Results({
+            @Result(column = "uid", property = "user", one = @One(select = "org.cloud.uploadanddownload.mapper.UserMapper.queryUserById")),
+            @Result(column = "file_id", property = "file", one = @One(select = "org.cloud.uploadanddownload.mapper.UserFileMapper.queryFileById"))
+    })
+    List<UserFile> queryUploadUserFIle(UserFile userFile);
+
     @Select({
             "<script>",
             "select * from user_file",
@@ -129,5 +153,8 @@ public interface UserFileMapper {
 
     @Select("select * from user_file where uid = #{uid} and file_id is null and `delete` = 1")
     List<UserFile> getUploading(int uid);
+
+    @Update("delete from user_file where id = #{id} and uid = #{uid} and `delete` = 1 and file_id is null")
+    int deleteUserFile(int id, int uid);
 
 }

@@ -259,7 +259,7 @@ public class UploadServiceImpl implements UploadService{
 
     @Override
     @Transactional
-    public FileDB merge(Integer user_file_id, Long chunk_size, Long tot_size, String name) {
+    public synchronized FileDB merge(Integer user_file_id, Long chunk_size, Long tot_size, String name) {
         Long count = (tot_size + chunk_size - 1) / chunk_size;
         System.out.println("块数：" + count);
 
@@ -267,6 +267,8 @@ public class UploadServiceImpl implements UploadService{
         String path1 = null;
         String path2 = null;
         String filePath = null;
+
+        int sum = 0;
 
         for (int i = 0; i < count; i++) {
             Chunk chunk = chunkMapper.queryChunk(user_file_id, i);
@@ -307,7 +309,10 @@ public class UploadServiceImpl implements UploadService{
             updateChunk.setStatus(ChunkStatus.FINISH);
             updateChunk.setGmt_modified(new Date());
             chunkMapper.update(updateChunk);
+            sum++;
         }
+
+        if (sum == 0) return null;
 
         System.out.println("去重逻辑。。。。");
         System.out.println(path2);

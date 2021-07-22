@@ -8,7 +8,7 @@ public interface UserMapper {
     @Select("select * from user where username = #{username} and deleted = 0")
     User queryUserByUsername(String username);
 
-    @Select("select * from user where id = #{id} and deleted = 0;")
+    @Select("select * from user where id = #{id} and deleted = 0")
     User queryUserById(int id);
 
     @Insert({
@@ -60,5 +60,11 @@ public interface UserMapper {
     })
     @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
     int updateUser(User user);
+
+    @Select("select sum(size) from user_file where uid = 1 and `delete` = 0 or (`delete` = #{uid} and file_id is null)")
+    Long querySize(int uid);
+
+    @Update("update user set count_size = #{size} where id = #{uid}")
+    int updateUserSize(long size, int uid);
 
 }

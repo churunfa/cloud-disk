@@ -26,6 +26,9 @@ public class FileServiceImpl implements FileService{
     public FileDB moveFile(String path1) {
         File file1 = new File(FileUtil.get(path1));
 
+        System.out.println("===========moveFile=================");
+        System.out.println("========>" + file1);
+
         FileDB fileDB = new FileDB();
         fileDB.setGmt_create(new Date());
         fileDB.setGmt_modified(new Date());

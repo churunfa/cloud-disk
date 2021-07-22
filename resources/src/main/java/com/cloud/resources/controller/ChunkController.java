@@ -9,7 +9,6 @@ import com.cloud.resources.service.UploadService;
 import com.cloud.resources.service.UploadServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -34,6 +33,7 @@ public class ChunkController {
     public RestResult<Chunk> chunkUpload(MultipartFile file, Integer user_file_id, Integer chunk_number) {
         if (file == null) return RestResultUtils.failed();
         Chunk chunk = uploadService.chunkUpload(file, user_file_id, chunk_number);
+        if (chunk == null) RestResultUtils.failed("您没有权限对此文件进行操作");
         return RestResultUtils.success(chunk);
     }
 
@@ -45,5 +45,8 @@ public class ChunkController {
         }).start();
         return RestResultUtils.success();
     }
+
+
+
 
 }

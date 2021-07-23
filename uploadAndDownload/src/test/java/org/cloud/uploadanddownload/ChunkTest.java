@@ -36,7 +36,7 @@ public class ChunkTest {
 
     @Test
     public void chunkUploadTest() throws Exception {
-        String f = "/Users/crf/Downloads/海贼王 第983集 -在线观看&动漫下载 - AGE动漫.mp4";
+        String f = "/Users/crf/Downloads/视频.mp4";
         File file = new File(f);
 
         FileItem fileItem = new DiskFileItem("file", Files.probeContentType(file.toPath()), false, file.getName(), (int) file.length(), file.getParentFile());
@@ -53,7 +53,7 @@ public class ChunkTest {
             System.out.println("共" + block_tot + "块");
 
             for (int i = 0; i < block_tot ; i++) {
-                chunkService.chunkUpload(multipartFile, 5, new User(), i);
+                chunkService.chunkUpload(multipartFile, 175, new User(), i);
             }
         } catch (IOException e) {
             e.printStackTrace();

@@ -18,8 +18,11 @@ import java.io.*;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.LinkedBlockingQueue;
 
 @Service
@@ -257,80 +260,125 @@ public class UploadServiceImpl implements UploadService{
         return queryChunk;
     }
 
+
+    private ConcurrentHashMap<Integer, Boolean> ufStatus = new ConcurrentHashMap<>();
+
     @Override
     @Transactional
-    public synchronized FileDB merge(Integer user_file_id, Long chunk_size, Long tot_size, String name) {
+    public FileDB merge(Integer user_file_id, Long chunk_size, Long tot_size, String name) {
         Long count = (tot_size + chunk_size - 1) / chunk_size;
         System.out.println("块数：" + count);
 
-        String margePath = null;
-        String path1 = null;
-        String path2 = null;
-        String filePath = null;
+        System.out.println("获取" + user_file_id + "锁");
 
-        int sum = 0;
+        synchronized (String.valueOf(user_file_id).intern()) {
+            String margePath = null;
+            String path1 = null;
+            String path2 = null;
+            String filePath = null;
 
-        for (int i = 0; i < count; i++) {
-            Chunk chunk = chunkMapper.queryChunk(user_file_id, i);
+            int sum = 0;
 
-            if (chunk == null || chunk.getStatus() == ChunkStatus.UPLOADING) {
-                System.out.println("编号为" + i + "的文件未上传完成");
-                return null;
+            for (int i = 0; i < count; i++) {
+                Chunk chunk = chunkMapper.queryChunk(user_file_id, i);
+
+                if (chunk == null || chunk.getStatus() == ChunkStatus.UPLOADING) {
+                    System.out.println("编号为" + i + "的文件未上传完成");
+                    return null;
+                }
+
+                String path = FileUtil.get(chunk.getPath());
+
+                path1 = path + "/" + chunk.getName();
+                path2 = path + "/merge-" + name;
+
+                margePath = chunk.getPath() + "/merge-" + name;
+
+                filePath =FileUtil.get(chunk.getPath());
+
+                if (chunk.getStatus() == ChunkStatus.FINISH) continue;
+
+                if (chunk.getChunk_number() != count - 1 && !chunk.getSize().equals(chunk_size)) {
+                    System.out.println("文件块受损");
+                    chunkMapper.delete(chunk.getId());
+                    return null;
+                }
+
+                if (i == 0) new File(path2).delete();
+
+                Boolean merge = FileUtil.merge(path1, path2);
+                if (!merge) {
+                    System.out.println("合并失败。。");
+                    return null;
+                }
+
+                Chunk updateChunk = new Chunk();
+                updateChunk.setId(chunk.getId());
+                updateChunk.setFileDB(new FileDB());
+                updateChunk.setStatus(ChunkStatus.FINISH);
+                updateChunk.setGmt_modified(new Date());
+                chunkMapper.update(updateChunk);
+                sum++;
             }
 
-            String path = FileUtil.get(chunk.getPath());
+            if (sum == 0) return null;
 
-            path1 = path + "/" + chunk.getName();
-            path2 = path + "/merge-" + name;
+            System.out.println("去重逻辑。。。。");
+            System.out.println(path2);
+            File file = new File(path2);
 
-            margePath = chunk.getPath() + "/merge-" + name;
+            String md5 = MD5.getMD5(file);
 
-            filePath =FileUtil.get(chunk.getPath());
+            List<FileDB> fileDBS = fileMapper.queryByMd5(md5);
 
-            if (chunk.getStatus() == ChunkStatus.FINISH) continue;
+            if (fileDBS.isEmpty()){
+                FileDB fileDB = fileService.moveFile(margePath);
 
-            if (chunk.getChunk_number() != count - 1 && !chunk.getSize().equals(chunk_size)) {
-                System.out.println("文件块受损");
-                chunkMapper.delete(chunk.getId());
-                return null;
+                UserFile userFile = new UserFile();
+                userFile.setId(user_file_id);
+                userFile.setGmt_modified(new Date());
+                userFile.setFile(fileDB);
+                userFile.setDelete(false);
+                userFile.setUser(new User());
+                fileMapper.updateUserFile(userFile);
+
+                File file1 = new File(filePath);
+                FileUtil.deleteFile(file1);
+
+                return fileDB;
             }
 
-            if (i == 0) new File(path2).delete();
+            for (FileDB fileDB : fileDBS) {
+                try {
+                    Boolean flag = FileUtil.compareFile(FileUtil.get(fileDB.getPath() + "/" + fileDB.getFilename()), FileUtil.get(margePath));
+                    if (flag) {
+                        UserFile userFile = new UserFile();
+                        userFile.setId(user_file_id);
+                        userFile.setGmt_modified(new Date());
+                        userFile.setUser(new User());
+                        userFile.setDelete(false);
+                        userFile.setFile(fileDB);
+                        fileMapper.updateUserFile(userFile);
 
-            Boolean merge = FileUtil.merge(path1, path2);
-            if (!merge) {
-                System.out.println("合并失败。。");
-                return null;
+                        File file1 = new File(filePath);
+                        FileUtil.deleteFile(file1);
+
+                        return fileDB;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    throw new RuntimeException();
+                }
             }
 
-            Chunk updateChunk = new Chunk();
-            updateChunk.setId(chunk.getId());
-            updateChunk.setFileDB(new FileDB());
-            updateChunk.setStatus(ChunkStatus.FINISH);
-            updateChunk.setGmt_modified(new Date());
-            chunkMapper.update(updateChunk);
-            sum++;
-        }
-
-        if (sum == 0) return null;
-
-        System.out.println("去重逻辑。。。。");
-        System.out.println(path2);
-        File file = new File(path2);
-
-        String md5 = MD5.getMD5(file);
-
-        List<FileDB> fileDBS = fileMapper.queryByMd5(md5);
-
-        if (fileDBS.isEmpty()){
             FileDB fileDB = fileService.moveFile(margePath);
 
             UserFile userFile = new UserFile();
             userFile.setId(user_file_id);
             userFile.setGmt_modified(new Date());
-            userFile.setFile(fileDB);
             userFile.setDelete(false);
             userFile.setUser(new User());
+            userFile.setFile(fileDB);
             fileMapper.updateUserFile(userFile);
 
             File file1 = new File(filePath);
@@ -338,44 +386,6 @@ public class UploadServiceImpl implements UploadService{
 
             return fileDB;
         }
-
-        for (FileDB fileDB : fileDBS) {
-            try {
-                Boolean flag = FileUtil.compareFile(FileUtil.get(fileDB.getPath() + "/" + fileDB.getFilename()), FileUtil.get(margePath));
-                if (flag) {
-                    UserFile userFile = new UserFile();
-                    userFile.setId(user_file_id);
-                    userFile.setGmt_modified(new Date());
-                    userFile.setUser(new User());
-                    userFile.setDelete(false);
-                    userFile.setFile(fileDB);
-                    fileMapper.updateUserFile(userFile);
-
-                    File file1 = new File(filePath);
-                    FileUtil.deleteFile(file1);
-
-                    return fileDB;
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-                throw new RuntimeException();
-            }
-        }
-
-        FileDB fileDB = fileService.moveFile(margePath);
-
-        UserFile userFile = new UserFile();
-        userFile.setId(user_file_id);
-        userFile.setGmt_modified(new Date());
-        userFile.setDelete(false);
-        userFile.setUser(new User());
-        userFile.setFile(fileDB);
-        fileMapper.updateUserFile(userFile);
-
-        File file1 = new File(filePath);
-        FileUtil.deleteFile(file1);
-
-        return fileDB;
     }
 
 }

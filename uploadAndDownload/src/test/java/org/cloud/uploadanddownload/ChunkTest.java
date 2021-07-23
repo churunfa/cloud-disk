@@ -1,11 +1,13 @@
 package org.cloud.uploadanddownload;
 
+import com.cloud.common.model.RestResult;
 import com.cloud.common.pojo.User;
 import com.cloud.common.pojo.file.Chunk;
 import com.cloud.common.pojo.file.UserFile;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItem;
 import org.apache.commons.io.IOUtils;
+import org.cloud.uploadanddownload.controller.ResourcesService;
 import org.cloud.uploadanddownload.mapper.ChunkMapper;
 import org.cloud.uploadanddownload.mapper.UserFileMapper;
 import org.cloud.uploadanddownload.service.ChunkService;
@@ -33,6 +35,9 @@ public class ChunkTest {
 
     @Autowired
     ChunkMapper chunkMapper;
+
+    @Autowired
+    ResourcesService resourcesService;
 
     @Test
     public void chunkUploadTest() throws Exception {
@@ -70,6 +75,12 @@ public class ChunkTest {
     public void getChunkSizeTest() {
         Long chunkSize = chunkMapper.getChunkSize(5);
         System.out.println(chunkSize);
+    }
+
+    @Test
+    public void chunkDownloadTest() {
+        RestResult<byte[]> restResult = resourcesService.chunkDownload(102, 5 * 1024 * 1024, 66);
+        System.out.println(restResult);
     }
 
 }

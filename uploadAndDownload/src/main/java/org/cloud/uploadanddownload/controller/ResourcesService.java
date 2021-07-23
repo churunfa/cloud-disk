@@ -4,6 +4,7 @@ import com.cloud.common.model.RestResult;
 import com.cloud.common.pojo.file.Chunk;
 import com.cloud.common.pojo.file.FileDB;
 import com.cloud.common.pojo.file.ZipFile;
+import com.cloud.common.pojo.file.ZipFileChunk;
 import feign.Headers;
 import feign.RequestLine;
 import org.apache.ibatis.annotations.Param;
@@ -34,4 +35,18 @@ public interface ResourcesService {
     @RequestMapping("/chunk/merge")
     RestResult<FileDB> merge(@RequestParam("user_file_id") Integer user_file_id, @RequestParam("chunk_size") Long chunk_size, @RequestParam("tot_size") Long tot_size, @RequestParam("name") String name);
 
+    @RequestMapping("/chunk/download")
+    RestResult<byte[]> chunkDownload(@RequestParam("fid") int fid, @RequestParam("chunkSize") int chunkSize, @RequestParam("chunkNo") int chunkNo);
+
+    @PostMapping("/chunk/downloads")
+    RestResult<byte[]> downloads(@RequestBody ZipFileChunk zipFile);
+
+    @RequestMapping("/chunk/getZip")
+    RestResult<long[]> getZip(@RequestBody ZipFileChunk zipFile);
+
+    @RequestMapping("/chunk/delete/zip")
+    RestResult deleteZip(@RequestParam("takeId") int takeId);
+
+    @RequestMapping("/chunk/check")
+    RestResult<ZipFileChunk> check(@RequestParam("id") String id);
 }

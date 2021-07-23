@@ -3,60 +3,51 @@ package org.cloud.uploadanddownload.controller;
 import com.cloud.common.pojo.AuthorizationUser;
 import com.cloud.common.pojo.User;
 import org.churunfa.security.grant.auth.Login;
-import org.cloud.uploadanddownload.service.DownLoadService;
+import org.cloud.uploadanddownload.service.ChunkService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
 
 @RestController
-public class DownLoadController {
+@RequestMapping("chunk")
+public class ChunkDownloadController {
 
-    DownLoadService downLoadService;
+    ChunkService chunkService;
 
     @Autowired
-    public void setDownLoadService(DownLoadService downLoadService) {
-        this.downLoadService = downLoadService;
+    public void setChunkService(ChunkService chunkService) {
+        this.chunkService = chunkService;
     }
 
     @Login
     @RequestMapping("/download/{id}")
-    public ResponseEntity<byte[]> download(@PathVariable("id") Integer id, AuthorizationUser authorizationUser) {
+    public void download(@PathVariable("id") Integer id, HttpServletResponse httpServletResponse, AuthorizationUser authorizationUser) {
         User user = authorizationUser.getUser();
         System.out.println(id);
         System.out.println(user);
-        return downLoadService.download(id, user);
+        chunkService.download(id, user, httpServletResponse);
     }
 
     @Login
     @RequestMapping("/downloads")
-    public ResponseEntity<byte[]> downloads(@RequestBody List<Integer> list, AuthorizationUser authorizationUser) {
+    public void downloads(@RequestBody List<Integer> list, AuthorizationUser authorizationUser, HttpServletResponse response) {
         User user = authorizationUser.getUser();
-        return downLoadService.downloads(list, user);
+        chunkService.downloads(list, user, response);
     }
 
     @RequestMapping("/share/download")
-    public ResponseEntity<byte[]> shareDownload(@RequestBody Map data_map) {
+    public void shareDownload(@RequestBody Map data_map, HttpServletResponse httpServletResponse) {
         int id = Integer.parseInt((String) data_map.get("id"));
         String password = (String) data_map.get("password");
         String filename = (String) data_map.get("filename");
 
-        return downLoadService.shareDownload(id, password, filename);
+        chunkService.shareDownload(id, password, filename, httpServletResponse);
     }
-
-    @Login
-    @RequestMapping("/getImage/{st}")
-    public ResponseEntity<byte[]> getImage(@PathVariable("st") int st, AuthorizationUser authorizationUser) {
-        User user = authorizationUser.getUser();
-        System.out.println(user);
-        return downLoadService.getImage(user, st);
-    }
-
-
 
 }

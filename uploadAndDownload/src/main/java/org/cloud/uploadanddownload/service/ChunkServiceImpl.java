@@ -9,6 +9,7 @@ import org.apache.commons.fileupload.FileItemFactory;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.cloud.uploadanddownload.controller.ResourcesService;
 import org.cloud.uploadanddownload.mapper.ChunkMapper;
+import org.cloud.uploadanddownload.mapper.ShareMapper;
 import org.cloud.uploadanddownload.mapper.UserFileMapper;
 import org.cloud.uploadanddownload.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.commons.CommonsMultipartFile;
 
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.net.URLEncoder;
 import java.util.*;
 
 @Service
@@ -29,6 +33,8 @@ public class ChunkServiceImpl implements ChunkService{
     ChunkMapper chunkMapper;
 
     ResourcesService resourcesService;
+
+    ShareMapper shareMapper;
 
     @Autowired
     public void setUserFileMapper(UserFileMapper userFileMapper) {
@@ -48,6 +54,11 @@ public class ChunkServiceImpl implements ChunkService{
     @Autowired
     public void setUserMapper(UserMapper userMapper) {
         this.userMapper = userMapper;
+    }
+
+    @Autowired
+    public void setShareMapper(ShareMapper shareMapper) {
+        this.shareMapper = shareMapper;
     }
 
     @Override
@@ -261,5 +272,128 @@ public class ChunkServiceImpl implements ChunkService{
         if (next >= count) return -2;
 
         return next;
+    }
+
+    @Override
+    public void download(Integer id, User user, HttpServletResponse response) {
+        UserFile userFile = new UserFile();
+        userFile.setId(id);
+        userFile.setUser(new User());
+        userFile.setFile(new FileDB());
+        List<UserFile> userFiles = userFileMapper.queryByUserFile(userFile);
+        if (userFiles == null || userFiles.isEmpty()||userFiles.size() != 1) return;
+
+        userFile = userFiles.get(0);
+
+        if (userFile.getUser().getId() != user.getId()) return;
+
+        Long totSize = userFile.getSize();
+        int chunkSize = 5 * 1024 * 1024;
+        Long count = (totSize + chunkSize - 1) / chunkSize;
+
+        try (ServletOutputStream os = response.getOutputStream()) {
+            String filename = URLEncoder.encode(userFile.getFile_name(),"UTF-8");
+            response.addHeader("Content-Disposition","attachment;filename=" + filename);
+            response.addHeader("Content-Length", "" + totSize);
+            response.setContentType("application/octet-stream");
+            for (int i = 0; i < count; i++) {
+                RestResult<byte[]> result = resourcesService.chunkDownload(userFile.getFile().getId(), chunkSize, i);
+                if (result.getCode() == -1) return;
+                os.write(result.getData(), 0, result.getCode());
+                os.flush();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    @Override
+    public void downloads(List<Integer> list, User user, HttpServletResponse response) {
+        ZipFileChunk zipFile = new ZipFileChunk();
+        Map<String, String> map = new HashMap<>();
+
+
+        for (Integer integer : list) {
+            UserFile userFile = new UserFile();
+            userFile.setId(integer);
+            userFile.setFile(new FileDB());
+            userFile.setUser(user);
+            List<UserFile> userFiles = userFileMapper.queryByUserFile(userFile);
+            if (userFiles == null || userFiles.isEmpty()) return;
+            String path = userFiles.get(0).getFile().getPath();
+            String name = userFiles.get(0).getFile().getFilename();
+            map.put(userFiles.get(0).getFile_name(), path + "/" + name);
+        }
+
+        zipFile.setId(UUID.randomUUID().toString());
+        zipFile.setFiles(map);
+        zipFile.setZipName(user.getUsername() + "的打包下载.zip");
+        zipFile.setChunkSize(5 * 1024 * 1024);
+
+        String filename = null;
+
+        try(ServletOutputStream os = response.getOutputStream();) {
+            filename = URLEncoder.encode(zipFile.getZipName(),"UTF-8");
+            response.addHeader("Content-Disposition","attachment;filename=" + filename);
+            response.setContentType("application/octet-stream");
+
+            resourcesService.getZip(zipFile);
+
+            String uuid = zipFile.getId();
+            while((zipFile = resourcesService.check(uuid).getData()) == null) { Thread.sleep(1000); }
+
+            response.addHeader("Content-Length", "" + zipFile.getTotSize());
+
+            System.out.println(zipFile);
+
+            long count = (zipFile.getTotSize() + zipFile.getChunkSize() - 1) / zipFile.getChunkSize();
+
+            System.out.println(count);
+
+            for (int i = 0; i < count; i++) {
+                zipFile.setChunkNo(i);
+                RestResult<byte[]> downloads = resourcesService.downloads(zipFile);
+                os.write(downloads.getData());
+                os.flush();
+            }
+            resourcesService.deleteZip(zipFile.getTask());
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println(map);
+
+    }
+
+    @Override
+    public void shareDownload(int id, String password, String name, HttpServletResponse response) {
+        Share share = shareMapper.queryShareById(id);
+
+        System.out.println(share);
+
+        if (share.getStatus() == Status.PASSWORD && !share.getToken().equals(password)) return;
+        if (share.getInvalid_time().getTime() < new Date().getTime()) return;
+
+        Long totSize = share.getUserFile().getSize();
+        int chunkSize = 5 * 1024 * 1024;
+        Long count = (totSize + chunkSize - 1) / chunkSize;
+
+        try (ServletOutputStream os = response.getOutputStream()) {
+            String filename = URLEncoder.encode(name,"UTF-8");
+            response.addHeader("Content-Disposition","attachment;filename=" + filename);
+            response.addHeader("Content-Length", "" + totSize);
+            response.setContentType("application/octet-stream");
+            for (int i = 0; i < count; i++) {
+                RestResult<byte[]> result = resourcesService.chunkDownload(share.getUserFile().getFile().getId(), chunkSize, i);
+                if (result.getCode() == -1) return;
+                os.write(result.getData(), 0, result.getCode());
+                os.flush();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

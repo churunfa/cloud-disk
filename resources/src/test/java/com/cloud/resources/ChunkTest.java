@@ -1,10 +1,9 @@
 package com.cloud.resources;
 
-import com.cloud.common.pojo.file.Chunk;
-import com.cloud.common.pojo.file.ChunkStatus;
-import com.cloud.common.pojo.file.FileDB;
-import com.cloud.common.pojo.file.UserFile;
+import com.cloud.common.model.RestResult;
+import com.cloud.common.pojo.file.*;
 import com.cloud.resources.mapper.ChunkMapper;
+import com.cloud.resources.service.DownloadService;
 import com.cloud.resources.service.UploadService;
 import com.cloud.resources.utils.FileUtil;
 import org.apache.commons.fileupload.FileItem;
@@ -24,6 +23,8 @@ import org.springframework.web.multipart.commons.CommonsMultipartFile;
 import java.io.*;
 import java.nio.file.Files;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -34,6 +35,9 @@ public class ChunkTest {
 
     @Autowired
     UploadService uploadService;
+
+    @Autowired
+    DownloadService downloadService;
 
     @Test
     public void insertTest() {
@@ -108,4 +112,41 @@ public class ChunkTest {
         System.out.println(file);
         FileUtil.deleteFile(file);
     }
+
+    @Test
+    public void chunkDownloadTest() {
+        RestResult<byte[]> restResult = downloadService.chunkDownload(102, 5 * 1024 * 1024, 0);
+        System.out.println(restResult);
+    }
+
+    @Test
+    public void getZipTest() {
+        ZipFileChunk zipFile = new ZipFileChunk();
+        Map<String, String> map = new HashMap<>();
+        map.put("海贼王.mp4", "/block-1/108.mp4");
+        map.put("啊.xlsx", "/block-1/110.xlsx");
+        map.put("开发手册.pdf", "/block-1/111.pdf");
+        map.put("开发手册2.pdf", "/block-1/111.pdf");
+        zipFile.setFiles(map);
+        zipFile.setZipName("压缩下载.zip");
+        zipFile.setChunkSize(5 * 1024 * 1024);
+        zipFile.setChunkNo(0);
+
+        RestResult<long[]> result = downloadService.getZip(zipFile);
+        System.out.println(result);
+        long[] data = result.getData();
+        zipFile.setTask((int) data[0]);
+
+        zipFile.setTotSize(data[1]);
+        System.out.println(zipFile);
+
+        RestResult<byte[]> restResult = downloadService.chunkDownloadByPaths(zipFile);
+        System.out.println(restResult);
+
+//        RestResult restResult1 = downloadService.deleteZip(zipFile.getTask());
+
+//        System.out.println(restResult1);
+
+    }
+
 }

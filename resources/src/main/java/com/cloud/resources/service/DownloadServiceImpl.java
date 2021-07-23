@@ -1,7 +1,10 @@
 package com.cloud.resources.service;
 
+import com.cloud.common.model.RestResult;
+import com.cloud.common.model.RestResultUtils;
 import com.cloud.common.pojo.file.FileDB;
 import com.cloud.common.pojo.file.ZipFile;
+import com.cloud.common.pojo.file.ZipFileChunk;
 import com.cloud.resources.mapper.FileMapper;
 import com.cloud.resources.utils.FileUtil;
 import com.cloud.resources.utils.ZipUtils;
@@ -17,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 @Service
@@ -124,5 +128,122 @@ public class DownloadServiceImpl implements DownloadService {
             }
         }
         return entity;
+    }
+
+
+    private RestResult<byte[]> getChunkData(String path, int chunkSize, int chunkNo) {
+
+        byte[] bytes = new byte[chunkSize];
+
+        try(BufferedInputStream bis = new BufferedInputStream(new FileInputStream(path))) {
+
+            bis.skip(chunkNo * chunkSize);
+            int len = bis.read(bytes);
+            return RestResultUtils.success(len, bytes);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return RestResultUtils.failed("读取文件失败");
+    }
+
+    @Override
+    public RestResult<byte[]> chunkDownload(int fid, int chunkSize, int chunkNo) {
+        FileDB fileDB = fileMapper.queryFileById(fid);
+        String path = fileDB.getPath();
+        String filename = fileDB.getFilename();
+        Long size = fileDB.getSize();
+
+        Long count = (size + chunkSize - 1) / chunkSize;
+
+        if (chunkNo >= count) return RestResultUtils.failed("没有当前块");
+
+        String realPath = FileUtil.get(path + "/" + filename);
+
+        return getChunkData(realPath, chunkSize, chunkNo);
+    }
+
+    Map<String, ZipFileChunk> map = new ConcurrentHashMap<>();
+
+    @Override
+    public RestResult<long[]> getZip(ZipFileChunk zipFile) {
+        System.out.println(zipFile);
+        String zipName = zipFile.getZipName();
+        Integer take = null;
+        try {
+            take = queue.take();
+
+            Map<String, String> files = zipFile.getFiles();
+            for (Map.Entry<String, String> entry : files.entrySet()) {
+                String path = FileUtil.get(entry.getValue());
+                String name = entry.getKey();
+                FileUtil.cache("tmp", new File(path), take, name);
+            }
+
+            String realPath = FileUtil.get("/tmp/" + take);
+
+            ZipUtils.toZip_(realPath, zipName);
+            long[] longs = new long[2];
+            longs[0] = take;
+            longs[1] = new File(realPath + "/" + zipName).length();
+            zipFile.setTask(take);
+            zipFile.setTotSize(longs[1]);
+            map.put(zipFile.getId(), zipFile);
+            return RestResultUtils.success(longs);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            try {
+                queue.put(take);
+            } catch (InterruptedException interruptedException) {
+                interruptedException.printStackTrace();
+            }
+            return RestResultUtils.failed();
+        }
+    }
+
+
+    @Override
+    public RestResult<byte[]> chunkDownloadByPaths(ZipFileChunk zipFile) {
+        String realPath = FileUtil.get("/tmp/" + zipFile.getTask() + "/" + zipFile.getZipName());
+        Integer chunkNo = zipFile.getChunkNo();
+        Integer chunkSize = zipFile.getChunkSize();
+        Long totSize = zipFile.getTotSize();
+        System.out.println(totSize);
+        long count = (totSize + chunkSize - 1) / chunkSize;
+
+        if (chunkNo >= count) RestResultUtils.failed("不存在的块");
+
+        byte[] bytes = new byte[5 * 1024 * 1024];
+
+        try(BufferedInputStream bis = new BufferedInputStream(new FileInputStream(realPath))) {
+            bis.skip(chunkNo * chunkSize);
+            int len = bis.read(bytes);
+            return RestResultUtils.success(len, bytes);
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return RestResultUtils.failed();
+    }
+
+    @Override
+    public RestResult deleteZip(int takeId) {
+        FileUtil.refresh("tmp", takeId);
+        try {
+            map.remove(takeId);
+            queue.put(takeId);
+            return RestResultUtils.success();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return RestResultUtils.failed();
+        }
+    }
+
+    @Override
+    public ZipFileChunk check(String id) {
+        return map.get(id);
     }
 }

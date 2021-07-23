@@ -55,8 +55,9 @@ public class FileUtil {
         byte[] buf = new byte[size];
 
         try {
-            while (bis.read(buf) != -1) {
-                out.write(buf);
+            int len = 0;
+            while ((len = bis.read(buf)) != -1) {
+                out.write(buf, 0, len);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -73,7 +74,7 @@ public class FileUtil {
     }
 
     public static boolean copy(InputStream in, OutputStream out) {
-        return copy(in, out, 8192);
+        return copy(in, out, 5 * 1024 * 1024);
     }
 
     public static File getFile(File file, Integer id, String newName) {

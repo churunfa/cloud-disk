@@ -1,6 +1,9 @@
 package com.cloud.resources.utils;
 
 import java.io.*;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.WritableByteChannel;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.zip.ZipOutputStream;
@@ -85,8 +88,11 @@ public abstract class ZipUtils {
 
         if (file.isFile()) {
             zos.putNextEntry(new ZipEntry(name));
+            WritableByteChannel writableByteChannel = Channels.newChannel(zos);
             FileInputStream in = new FileInputStream(file);
-            FileUtil.copy(in, zos);
+            FileChannel fileChannel = in.getChannel();
+            fileChannel.transferTo(0, fileChannel.size(), writableByteChannel);
+//            FileUtil.copy(in, zos);
             zos.closeEntry();
             in.close();
         } else {

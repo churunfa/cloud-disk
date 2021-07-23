@@ -260,9 +260,6 @@ public class UploadServiceImpl implements UploadService{
         return queryChunk;
     }
 
-
-    private ConcurrentHashMap<Integer, Boolean> ufStatus = new ConcurrentHashMap<>();
-
     @Override
     @Transactional
     public FileDB merge(Integer user_file_id, Long chunk_size, Long tot_size, String name) {
@@ -304,8 +301,6 @@ public class UploadServiceImpl implements UploadService{
                     return null;
                 }
 
-                if (i == 0) new File(path2).delete();
-
                 Boolean merge = FileUtil.merge(path1, path2);
                 if (!merge) {
                     System.out.println("合并失败。。");
@@ -318,10 +313,14 @@ public class UploadServiceImpl implements UploadService{
                 updateChunk.setStatus(ChunkStatus.FINISH);
                 updateChunk.setGmt_modified(new Date());
                 chunkMapper.update(updateChunk);
-                sum++;
+
+                new File(path1).delete();
+
+                sum = i;
+                System.out.println("释放锁" + user_file_id);
             }
 
-            if (sum == 0) return null;
+            if (sum != count - 1) return null;
 
             System.out.println("去重逻辑。。。。");
             System.out.println(path2);
@@ -383,7 +382,6 @@ public class UploadServiceImpl implements UploadService{
 
             File file1 = new File(filePath);
             FileUtil.deleteFile(file1);
-
             return fileDB;
         }
     }

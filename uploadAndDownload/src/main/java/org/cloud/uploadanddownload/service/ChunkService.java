@@ -5,6 +5,7 @@ import com.cloud.common.pojo.User;
 import com.cloud.common.pojo.file.Chunk;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
 
@@ -19,4 +20,8 @@ public interface ChunkService {
     List<Map> getUploading(User user);
     Boolean cancel(Integer user_file_id, User user);
     Integer getNext(Integer user_file_id, User user);
+    void download(Integer id, User user, HttpServletResponse httpServletResponse);
+    void downloads(List<Integer> list, User user, HttpServletResponse response);
+
+    void shareDownload(int id, String password, String filename, HttpServletResponse response);
 }

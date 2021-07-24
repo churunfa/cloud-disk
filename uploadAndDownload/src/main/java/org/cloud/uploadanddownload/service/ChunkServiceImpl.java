@@ -396,4 +396,15 @@ public class ChunkServiceImpl implements ChunkService{
             e.printStackTrace();
         }
     }
+
+    @Override
+    public RestResult<String> check(int id, String password, String filename) {
+        Share share = shareMapper.queryShareById(id);
+
+        System.out.println(share);
+
+        if (share.getStatus() == Status.PASSWORD && !share.getToken().equals(password)) return RestResultUtils.failed("密码错误");
+        if (share.getInvalid_time().getTime() < new Date().getTime()) return RestResultUtils.failed("分享已失效");
+        return RestResultUtils.success();
+    }
 }

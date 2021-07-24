@@ -261,7 +261,6 @@ public class UploadServiceImpl implements UploadService{
     }
 
     @Override
-    @Transactional
     public FileDB merge(Integer user_file_id, Long chunk_size, Long tot_size, String name) {
         Long count = (tot_size + chunk_size - 1) / chunk_size;
         System.out.println("块数：" + count);
@@ -301,6 +300,7 @@ public class UploadServiceImpl implements UploadService{
                     return null;
                 }
 
+                System.out.println("文件" + chunk.getUser_file_id() + "的第" + chunk.getChunk_number() + "块进行合并");
                 Boolean merge = FileUtil.merge(path1, path2);
                 if (!merge) {
                     System.out.println("合并失败。。");
@@ -314,13 +314,17 @@ public class UploadServiceImpl implements UploadService{
                 updateChunk.setGmt_modified(new Date());
                 chunkMapper.update(updateChunk);
 
+                System.out.println("文件" + chunk.getUser_file_id() + "的第" + chunk.getChunk_number() + "块状态更新");
+
                 new File(path1).delete();
 
                 sum = i;
-                System.out.println("释放锁" + user_file_id);
             }
 
-            if (sum != count - 1) return null;
+            if (sum != count - 1) {
+                System.out.println("释放锁" + user_file_id);
+                return null;
+            }
 
             System.out.println("去重逻辑。。。。");
             System.out.println(path2);

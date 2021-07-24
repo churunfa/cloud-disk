@@ -24,4 +24,5 @@ public interface ChunkService {
     void downloads(List<Integer> list, User user, HttpServletResponse response);
 
     void shareDownload(int id, String password, String filename, HttpServletResponse response);
+    RestResult<String> check(int id, String password, String filename);
 }

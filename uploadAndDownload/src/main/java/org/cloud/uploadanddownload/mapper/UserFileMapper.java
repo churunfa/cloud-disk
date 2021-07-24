@@ -151,7 +151,7 @@ public interface UserFileMapper {
     })
     UserFile queryImages(int uid, int st);
 
-    @Select("select * from user_file where uid = #{uid} and file_id is null and `delete` = 1")
+    @Select("select * from user_file where uid = #{uid} and file_id is null and `delete` = 1 and fileType = 'FILE'")
     List<UserFile> getUploading(int uid);
 
     @Update("delete from user_file where id = #{id} and uid = #{uid} and `delete` = 1 and file_id is null")

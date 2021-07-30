@@ -8,4 +8,5 @@ public interface UploadService {
     FileDB saveFile(MultipartFile file);
     Chunk chunkUpload(MultipartFile file, Integer user_file_id, Integer chunk_number);
     FileDB merge(Integer user_file_id, Long chunk_size, Long tot_size, String name);
+    FileDB merge_trans(Long count, Integer user_file_id, Long chunk_size, String name);
 }

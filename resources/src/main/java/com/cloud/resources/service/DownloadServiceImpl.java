@@ -19,9 +19,7 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.*;
 
 @Service
 public class DownloadServiceImpl implements DownloadService {
@@ -30,19 +28,15 @@ public class DownloadServiceImpl implements DownloadService {
 
     FileMapper fileMapper;
 
-    public void setQueue(BlockingQueue<Integer> queue) {
-        this.queue = queue;
-    }
-
     @Autowired
     public void setFileMapper(FileMapper fileMapper) {
         this.fileMapper = fileMapper;
     }
 
     public DownloadServiceImpl() {
-        List<Integer> list = new ArrayList<>();
-        for (int i = 1; i <= 100; i++) list.add(i);
-        queue = new LinkedBlockingQueue(list);
+        queue = new ArrayBlockingQueue<>(1000);
+        for (int i = 1; i <= 1000; i++) queue.add(i);
+
     }
 
     @Override
